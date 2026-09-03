@@ -720,6 +720,17 @@ renderer.toneMappingExposure = 1.02;
             envMapIntensity: 0.68,
             side: THREE.DoubleSide
         });
+        // Acero del refrigerador: más oscuro, satinado y con reflejo controlado para evitar el aspecto blanco.
+        const matAceroRefrigerador = new THREE.MeshPhysicalMaterial({
+            color: 0x777d80,
+            metalness: 0.93,
+            roughness: 0.38,
+            roughnessMap: roughnessAceroCepillado,
+            clearcoat: 0.10,
+            clearcoatRoughness: 0.30,
+            envMapIntensity: 0.42,
+            side: THREE.DoubleSide
+        });
         const matAluminioBlanco = new THREE.MeshStandardMaterial({ color: CONFIG.materiales.aluminioBlanco.color, metalness: 0.34, roughness: 0.28 });
         const matMuro = new THREE.MeshStandardMaterial({ color: CONFIG.materiales.muro.color, roughness: 0.88, metalness: 0.0, bumpMap: bumpMuro, bumpScale: 0.16, side: THREE.DoubleSide });
         const matVidrio = new THREE.MeshPhysicalMaterial({ color: 0xb8d2df, transparent: CONFIG.materiales.vidrioVentana.transparent, opacity: 0.22, roughness: 0.055, metalness: 0.0, transmission: CONFIG.materiales.vidrioVentana.transmission, ior: CONFIG.materiales.vidrioVentana.ior, thickness: 0.35, envMapIntensity: 0.82, depthWrite: CONFIG.materiales.vidrioVentana.depthWrite, side: THREE.DoubleSide });
@@ -1549,16 +1560,45 @@ renderer.toneMappingExposure = 1.02;
             const hCajon = CONFIG.modulos.derecho.altoCajon, hPuerta = altoMueblesEstandar - hCajon, dGab = CONFIG.barra.profundidadMueble, esp = CONFIG.barra.espesorTablerosPVC;
             for (let i = 0; i < 2; i++) {
                 const xCenter = startX + (i * wSeccion) + (wSeccion / 2), groupCajon = new THREE.Group();
-                const frenteCajonLambrin = crearPanelLambrinContinuo(wSeccion, hCajon - 0.2, startX + i * wSeccion); 
-                frenteCajonLambrin.position.set(0, hCajon / 2, dGab - esp); groupCajon.add(frenteCajonLambrin);
+                const wInterior = wSeccion - 2.4;
+                const dInterior = dGab - 5.0;
+                const hInterior = hCajon - 3.0;
 
-                const hitBoxCajon = crearCaja(wSeccion, hCajon - 0.2, CONFIG.barra.hitboxGrosor, matHitbox); 
-                hitBoxCajon.position.set(0, hCajon / 2, dGab - 1); groupCajon.add(hitBoxCajon);
+                // Frente de cajón: conserva exactamente la modulación de lambrín existente.
+                const frenteCajonLambrin = crearPanelLambrinContinuo(wSeccion, hCajon - 0.2, startX + i * wSeccion);
+                frenteCajonLambrin.position.set(0, hCajon / 2, dGab - esp);
+                groupCajon.add(frenteCajonLambrin);
 
-                const pisoCajon = crearCaja(wSeccion - 2, esp, dGab - 4, matPVC); 
-                pisoCajon.position.set(0, esp / 2, (dGab - 4) / 2); groupCajon.add(pisoCajon);
+                // Caja real del cajón: fondo, laterales y trasera, con pequeñas holguras visibles.
+                const pisoCajon = crearCaja(wInterior, esp, dInterior, matPVC);
+                pisoCajon.position.set(0, esp / 2, dInterior / 2);
+                groupCajon.add(pisoCajon);
 
-                groupCajon.position.set(xCenter, CONFIG.barra.altoZocalo + hPuerta, 0); 
+                const lateralL = crearCaja(esp, hInterior, dInterior, matPVC);
+                lateralL.position.set(-wInterior / 2 + esp / 2, hInterior / 2 + esp, dInterior / 2);
+                groupCajon.add(lateralL);
+                const lateralR = crearCaja(esp, hInterior, dInterior, matPVC);
+                lateralR.position.set(wInterior / 2 - esp / 2, hInterior / 2 + esp, dInterior / 2);
+                groupCajon.add(lateralR);
+                const traseraCajon = crearCaja(wInterior, hInterior, esp, matPVC);
+                traseraCajon.position.set(0, hInterior / 2 + esp, dInterior - esp / 2);
+                groupCajon.add(traseraCajon);
+
+                // Rieles laterales visibles únicamente cuando el cajón está abierto.
+                const rielW = 1.4, rielH = 1.2, rielD = dInterior - 8;
+                const rielL = crearCaja(rielW, rielH, rielD, matAceroOscuro);
+                rielL.position.set(-wInterior / 2 + 2.2, hInterior * 0.48, rielD / 2 + 3);
+                groupCajon.add(rielL);
+                const rielR = crearCaja(rielW, rielH, rielD, matAceroOscuro);
+                rielR.position.set(wInterior / 2 - 2.2, hInterior * 0.48, rielD / 2 + 3);
+                groupCajon.add(rielR);
+
+                // Hitbox táctil frontal amplia y localizada: no interfiere con la puerta inferior.
+                const hitBoxCajon = crearCaja(wSeccion - 1.0, hCajon - 0.8, 4.0, matHitbox);
+                hitBoxCajon.position.set(0, hCajon / 2, dGab + 0.2);
+                groupCajon.add(hitBoxCajon);
+
+                groupCajon.position.set(xCenter, CONFIG.barra.altoZocalo + hPuerta, 0);
                 grupoMuroNorte.add(groupCajon);
 
                 registrarInteractivo(hitBoxCajon, { tipo: 'extraible', grupo: groupCajon, abierto: false, posZ_cerrado: 0, posZ_abierto: CONFIG.modulos.derecho.animPosZAbierto });
@@ -1610,7 +1650,7 @@ renderer.toneMappingExposure = 1.02;
 
             const cfgRefri = cfgNic.refrigerador;
             const refriW = cfgRefri.ancho, refriH = cfgRefri.alto, refriD = cfgRefri.profundidad;
-            const refriBase = crearCaja(refriW, refriH, refriD, matAcero); 
+            const refriBase = crearCaja(refriW, refriH, refriD, matAceroRefrigerador); 
             refriBase.position.set(centerX, CONFIG.barra.altoZocalo + cfgRefri.offsetYBase + refriH / 2, refriD / 2 + cfgRefri.offsetZBase); 
             grupoNichoNorte.add(refriBase);
 
@@ -1709,16 +1749,29 @@ renderer.toneMappingExposure = 1.02;
         document.getElementById('chk-muro-nicho').addEventListener('change', e => grupoNichoNorte.visible = e.target.checked);
 
         const raycaster = new THREE.Raycaster();
-        const mouse = new THREE.Vector2(); 
+        const mouse = new THREE.Vector2();
         let pointerDownPos = { x: 0, y: 0 };
+        let pointerDownId = null;
+        let pointerDownTouches = 0;
 
-        window.addEventListener('pointerdown', (e) => pointerDownPos = { x: e.clientX, y: e.clientY });
-        window.addEventListener('pointerup', (event) => {
-            if (Math.hypot(event.clientX - pointerDownPos.x, event.clientY - pointerDownPos.y) > 6) return;
-            mouse.x = (event.clientX / window.innerWidth) * 2 - 1; 
-            mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
-            raycaster.setFromCamera(mouse, camera); 
-            
+        // La interacción de elementos se limita al canvas para que los botones/UI nunca roben el toque.
+        renderer.domElement.addEventListener('pointerdown', (e) => {
+            pointerDownId = e.pointerId;
+            pointerDownPos = { x: e.clientX, y: e.clientY };
+            pointerDownTouches = e.pointerType === 'touch' ? 1 : 0;
+        }, { passive: true });
+
+        renderer.domElement.addEventListener('pointerup', (event) => {
+            if (pointerDownId !== event.pointerId) return;
+            pointerDownId = null;
+            if (pointerDownTouches > 1) return;
+            if (Math.hypot(event.clientX - pointerDownPos.x, event.clientY - pointerDownPos.y) > 8) return;
+
+            const rect = renderer.domElement.getBoundingClientRect();
+            mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+            mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+            raycaster.setFromCamera(mouse, camera);
+
             const intersects = raycaster.intersectObjects(objetosInteractivos, false);
             if (intersects.length > 0) {
                 const obj = intersects[0].object; 
@@ -1745,6 +1798,7 @@ renderer.toneMappingExposure = 1.02;
                 data.abierto = targetAbierto;
             }
         });
+        renderer.domElement.addEventListener('pointercancel', () => { pointerDownId = null; }, { passive: true });
 
         function animate(time) { 
             requestAnimationFrame(animate); 
@@ -2210,7 +2264,7 @@ renderer.toneMappingExposure = 1.02;
 
 <script>
 /* V3.1 build marker: geometry intentionally inherited unchanged from V3. */
-document.documentElement.dataset.build = "V4.0-MOBILE-DOCS";
+document.documentElement.dataset.build = "V4.2-REALISTA-INTERACCIONES";
 </script>
 </body>
 </html>
