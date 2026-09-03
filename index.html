@@ -74,6 +74,7 @@
             }
         }
     </script>
+<meta name="build" content="V4.3-MUEBLES-REALISTAS">
 </head>
 <body>
 
@@ -446,10 +447,10 @@
         // =========================================================================
         const container = document.getElementById('canvas-container');
         const scene = new THREE.Scene();
-        scene.background = new THREE.Color(0xb9cbd8);
+        scene.background = new THREE.Color(0x7f9eb6);
 
         const camera = new THREE.PerspectiveCamera(42, window.innerWidth / window.innerHeight, 1, 6000);
-        camera.position.set(195, 240, 580); 
+        camera.position.set(235, 175, 520); 
 
         const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false, powerPreference: 'high-performance' });
         renderer.setSize(window.innerWidth, window.innerHeight);
@@ -459,11 +460,11 @@
 // salida sRGB + tone mapping cinematográfico para materiales y luz más naturales.
 renderer.outputColorSpace = THREE.SRGBColorSpace;
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
-renderer.toneMappingExposure = 1.02;
+renderer.toneMappingExposure = 0.96;
         renderer.shadowMap.enabled = true;
         renderer.shadowMap.type = THREE.PCFSoftShadowMap;
         renderer.toneMapping = THREE.ACESFilmicToneMapping;
-        renderer.toneMappingExposure = 1.02;
+        renderer.toneMappingExposure = 0.96;
         renderer.outputColorSpace = THREE.SRGBColorSpace;
         renderer.useLegacyLights = false;
         container.appendChild(renderer.domElement);
@@ -478,8 +479,8 @@ renderer.toneMappingExposure = 1.02;
 
         const sky = new Sky();
         sky.scale.setScalar(4500);
-        sky.material.uniforms.turbidity.value = 5.5;
-        sky.material.uniforms.rayleigh.value = 1.8;
+        sky.material.uniforms.turbidity.value = 7.0;
+        sky.material.uniforms.rayleigh.value = 1.15;
         sky.material.uniforms.mieCoefficient.value = 0.004;
         sky.material.uniforms.mieDirectionalG.value = 0.78;
 
@@ -502,12 +503,12 @@ renderer.toneMappingExposure = 1.02;
         // Mezcla muy suave: cielo dominante + relleno de estudio.
         // Esto evita reflejos blancos excesivos en el acero y conserva detalle en sombra.
         scene.environment = skyEnv;
-        scene.background = new THREE.Color(0xb9cbd8);
+        scene.background = new THREE.Color(0x7f9eb6);
 
         pmremGenerator.dispose();
 
         const controls = new OrbitControls(camera, renderer.domElement);
-        controls.target.set(195, 100, 200);
+        controls.target.set(195, 88, 185);
         controls.enableDamping = true;
         controls.dampingFactor = 0.06;
         controls.minPolarAngle = 0.01; 
@@ -528,13 +529,13 @@ renderer.toneMappingExposure = 1.02;
         window.camera = camera;
         window.renderer = renderer;
 
-        const ambientLight = new THREE.AmbientLight(0xfff6ea, 0.22);
+        const ambientLight = new THREE.AmbientLight(0xfff4e8, 0.16);
         scene.add(ambientLight);
 
-        const hemiLight = new THREE.HemisphereLight(0xfff2dc, 0x27352f, 0.48);
+        const hemiLight = new THREE.HemisphereLight(0xdbe8f2, 0x27352f, 0.38);
         scene.add(hemiLight);
 
-        const dirLight = new THREE.DirectionalLight(0xffdfb5, 2.35);
+        const dirLight = new THREE.DirectionalLight(0xffd8ae, 1.75);
         dirLight.position.set(-240, 520, 360);
         dirLight.castShadow = true;
         dirLight.shadow.mapSize.width = 2048;
@@ -549,9 +550,23 @@ renderer.toneMappingExposure = 1.02;
         dirLight.shadow.normalBias = 0.02;
         scene.add(dirLight);
 
-        const fillLight = new THREE.DirectionalLight(0xc7d8e8, 0.48);
+        const fillLight = new THREE.DirectionalLight(0xbfd4e5, 0.34);
         fillLight.position.set(300, 260, -220);
         scene.add(fillLight);
+
+        // Luz arquitectónica cálida para lectura fotográfica de muro, piedra y vegetación.
+        const wallWash = new THREE.PointLight(0xffc27d, 22, 300, 2.0);
+        wallWash.position.set(posX_ModAsador + CONFIG.modulos.asador.ancho / 2, 150, 28);
+        wallWash.castShadow = false;
+        scene.add(wallWash);
+
+        const counterGlow = new THREE.PointLight(0xffb56b, 10, 180, 2.0);
+        counterGlow.position.set(posX_ModAsador + 5, 82, 34);
+        scene.add(counterGlow);
+
+        const plantGlow = new THREE.PointLight(0xffd09a, 7, 190, 2.0);
+        plantGlow.position.set(90, 78, 18);
+        scene.add(plantGlow);
 
         // =========================================================================
         // 3. GENERADORES PROCEDIMENTALES DE TEXTURAS
@@ -731,6 +746,27 @@ renderer.toneMappingExposure = 1.02;
             envMapIntensity: 0.42,
             side: THREE.DoubleSide
         });
+        // Materiales dedicados para el interior de cajones: PVC negro satinado, menos plástico y con lectura de profundidad.
+        const matPVCInteriorRealista = new THREE.MeshPhysicalMaterial({
+            color: 0x171a1d, metalness: 0.10, roughness: 0.48,
+            clearcoat: 0.10, clearcoatRoughness: 0.34, envMapIntensity: 0.46, side: THREE.DoubleSide
+        });
+        const matSombraJunta = new THREE.MeshStandardMaterial({
+            color: 0x07090b, roughness: 0.78, metalness: 0.0, side: THREE.DoubleSide
+        });
+
+        // Acabados orgánicos V4.4: estuco mineral y piedra de protección térmica.
+        const matEstucoMineral = new THREE.MeshPhysicalMaterial({
+            color: 0xd0c1aa, roughness: 0.92, metalness: 0.0,
+            bumpMap: bumpMicrocemento, bumpScale: 0.26,
+            clearcoat: 0.0, envMapIntensity: 0.38, side: THREE.DoubleSide
+        });
+        const matPiedraTermica = new THREE.MeshPhysicalMaterial({
+            color: 0x777064, roughness: 0.84, metalness: 0.0,
+            bumpMap: bumpMicrocemento, bumpScale: 0.34,
+            clearcoat: 0.0, envMapIntensity: 0.30, side: THREE.DoubleSide
+        });
+
         const matAluminioBlanco = new THREE.MeshStandardMaterial({ color: CONFIG.materiales.aluminioBlanco.color, metalness: 0.34, roughness: 0.28 });
         const matMuro = new THREE.MeshStandardMaterial({ color: CONFIG.materiales.muro.color, roughness: 0.88, metalness: 0.0, bumpMap: bumpMuro, bumpScale: 0.16, side: THREE.DoubleSide });
         const matVidrio = new THREE.MeshPhysicalMaterial({ color: 0xb8d2df, transparent: CONFIG.materiales.vidrioVentana.transparent, opacity: 0.22, roughness: 0.055, metalness: 0.0, transmission: CONFIG.materiales.vidrioVentana.transmission, ior: CONFIG.materiales.vidrioVentana.ior, thickness: 0.35, envMapIntensity: 0.82, depthWrite: CONFIG.materiales.vidrioVentana.depthWrite, side: THREE.DoubleSide });
@@ -1338,9 +1374,31 @@ renderer.toneMappingExposure = 1.02;
         // 9. BARRA NORTE, MOBILIARIO Y NICHO
         // =========================================================================
         function construirEstructuraBaseBarra() {
-            const lambrinMuroGroup = crearPanelLambrinContinuo(anchoBarraExclusivo, CONFIG.lambrin.muroNorte.alto, 0); 
-            lambrinMuroGroup.position.set(anchoBarraExclusivo / 2, CONFIG.barra.altoTotal + (CONFIG.lambrin.muroNorte.alto / 2), CONFIG.lambrin.muroNorte.posZ); 
-            grupoMuroNorte.add(lambrinMuroGroup);
+            // V4.4: acabado orgánico Mediterráneo-Japonés. Se elimina el lambrín del muro posterior.
+            const muroOrganico = crearCaja(
+                anchoBarraExclusivo,
+                CONFIG.lambrin.muroNorte.alto,
+                1.2,
+                matEstucoMineral
+            );
+            muroOrganico.position.set(
+                anchoBarraExclusivo / 2,
+                CONFIG.barra.altoTotal + (CONFIG.lambrin.muroNorte.alto / 2),
+                CONFIG.lambrin.muroNorte.posZ
+            );
+            grupoMuroNorte.add(muroOrganico);
+
+            // Superficie mineral localizada detrás del asador: visualmente continua con el muro,
+            // pero diferenciada para representar una zona de protección térmica.
+            const anchoPanelTermico = CONFIG.modulos.asador.ancho + 18;
+            const altoPanelTermico = 112;
+            const panelTermico = crearCaja(anchoPanelTermico, altoPanelTermico, 1.8, matPiedraTermica);
+            panelTermico.position.set(
+                posX_ModAsador + CONFIG.modulos.asador.ancho / 2,
+                CONFIG.barra.altoTotal + altoPanelTermico / 2 - 1,
+                CONFIG.lambrin.muroNorte.posZ - 0.45
+            );
+            grupoMuroNorte.add(panelTermico);
 
             const lambrinSobreNichoGroup = crearPanelLambrinContinuo(CONFIG.nicho.ancho + grosorPier, CONFIG.lambrin.sobreNicho.alto, posX_NichoNorte - grosorPier); 
             lambrinSobreNichoGroup.position.set(posX_NichoNorte - grosorPier + ((CONFIG.nicho.ancho + grosorPier) / 2), hNichoTotal + grosorPier + CONFIG.lambrin.sobreNicho.alto / 2, CONFIG.lambrin.sobreNicho.posZ); 
@@ -1458,19 +1516,22 @@ renderer.toneMappingExposure = 1.02;
                 const frenteLambrin = crearPanelLambrinContinuo(wGabinete, hGab - 0.2, posX_ModIzq + i * wGabinete); 
                 frenteLambrin.position.set(0, hGab / 2, dGab - esp); groupExtraible.add(frenteLambrin);
 
-                const hitBoxFrente = crearCaja(wGabinete, hGab - 0.2, CONFIG.barra.hitboxGrosor, matHitbox); 
-                hitBoxFrente.position.set(0, hGab / 2, dGab - 1); groupExtraible.add(hitBoxFrente);
+                const juntaFrente = crearCaja(wGabinete + 0.55, hGab + 0.55, 0.22, matSombraJunta);
+                juntaFrente.position.set(0, hGab / 2, dGab - esp - 0.18); groupExtraible.add(juntaFrente);
 
-                const pisoInt = crearCaja(wGabinete - 2, esp, dGab - 4, matPVC); 
+                const hitBoxFrente = crearCaja(wGabinete, hGab - 0.2, CONFIG.barra.hitboxGrosor, matHitbox); 
+                hitBoxFrente.position.set(0, hGab / 2, dGab + 1.7); groupExtraible.add(hitBoxFrente);
+
+                const pisoInt = crearCaja(wGabinete - 2, esp, dGab - 4, matPVCInteriorRealista); 
                 pisoInt.position.set(0, esp / 2, (dGab - 4) / 2); groupExtraible.add(pisoInt);
 
-                const paredIzq = crearCaja(esp, hGab - 6, dGab - 4, matPVC); 
+                const paredIzq = crearCaja(esp, hGab - 6, dGab - 4, matPVCInteriorRealista); 
                 paredIzq.position.set(-(wGabinete - 2) / 2 + esp / 2, (hGab - 6) / 2, (dGab - 4) / 2); groupExtraible.add(paredIzq);
 
-                const paredDer = crearCaja(esp, hGab - 6, dGab - 4, matPVC); 
+                const paredDer = crearCaja(esp, hGab - 6, dGab - 4, matPVCInteriorRealista); 
                 paredDer.position.set((wGabinete - 2) / 2 - esp / 2, (hGab - 6) / 2, (dGab - 4) / 2); groupExtraible.add(paredDer);
 
-                const fondoInt = crearCaja(wGabinete - 2, hGab - 6, esp, matPVC); 
+                const fondoInt = crearCaja(wGabinete - 2, hGab - 6, esp, matPVCInteriorRealista); 
                 fondoInt.position.set(0, (hGab - 6) / 2, esp / 2 + 1); groupExtraible.add(fondoInt);
 
                 const boteFrontal = crearBoteBasuraAnchoHorizontal(); boteFrontal.position.set(0, esp, dGab - cfgBote.posZFrontal); groupExtraible.add(boteFrontal);
@@ -1569,18 +1630,23 @@ renderer.toneMappingExposure = 1.02;
                 frenteCajonLambrin.position.set(0, hCajon / 2, dGab - esp);
                 groupCajon.add(frenteCajonLambrin);
 
+                // Junta perimetral oscura: crea la sombra fina que normalmente existe entre frente y gabinete.
+                const juntaFrente = crearCaja(wSeccion + 0.55, hCajon + 0.55, 0.22, matSombraJunta);
+                juntaFrente.position.set(0, hCajon / 2, dGab - esp - 0.18);
+                groupCajon.add(juntaFrente);
+
                 // Caja real del cajón: fondo, laterales y trasera, con pequeñas holguras visibles.
-                const pisoCajon = crearCaja(wInterior, esp, dInterior, matPVC);
+                const pisoCajon = crearCaja(wInterior, esp, dInterior, matPVCInteriorRealista);
                 pisoCajon.position.set(0, esp / 2, dInterior / 2);
                 groupCajon.add(pisoCajon);
 
-                const lateralL = crearCaja(esp, hInterior, dInterior, matPVC);
+                const lateralL = crearCaja(esp, hInterior, dInterior, matPVCInteriorRealista);
                 lateralL.position.set(-wInterior / 2 + esp / 2, hInterior / 2 + esp, dInterior / 2);
                 groupCajon.add(lateralL);
-                const lateralR = crearCaja(esp, hInterior, dInterior, matPVC);
+                const lateralR = crearCaja(esp, hInterior, dInterior, matPVCInteriorRealista);
                 lateralR.position.set(wInterior / 2 - esp / 2, hInterior / 2 + esp, dInterior / 2);
                 groupCajon.add(lateralR);
-                const traseraCajon = crearCaja(wInterior, hInterior, esp, matPVC);
+                const traseraCajon = crearCaja(wInterior, hInterior, esp, matPVCInteriorRealista);
                 traseraCajon.position.set(0, hInterior / 2 + esp, dInterior - esp / 2);
                 groupCajon.add(traseraCajon);
 
@@ -1594,8 +1660,8 @@ renderer.toneMappingExposure = 1.02;
                 groupCajon.add(rielR);
 
                 // Hitbox táctil frontal amplia y localizada: no interfiere con la puerta inferior.
-                const hitBoxCajon = crearCaja(wSeccion - 1.0, hCajon - 0.8, 4.0, matHitbox);
-                hitBoxCajon.position.set(0, hCajon / 2, dGab + 0.2);
+                const hitBoxCajon = crearCaja(wSeccion - 1.4, hCajon - 1.0, 6.0, matHitbox);
+                hitBoxCajon.position.set(0, hCajon / 2, dGab + 1.8);
                 groupCajon.add(hitBoxCajon);
 
                 groupCajon.position.set(xCenter, CONFIG.barra.altoZocalo + hPuerta, 0);
@@ -1752,51 +1818,70 @@ renderer.toneMappingExposure = 1.02;
         const mouse = new THREE.Vector2();
         let pointerDownPos = { x: 0, y: 0 };
         let pointerDownId = null;
-        let pointerDownTouches = 0;
+        let pointerMoved = false;
 
-        // La interacción de elementos se limita al canvas para que los botones/UI nunca roben el toque.
         renderer.domElement.addEventListener('pointerdown', (e) => {
             pointerDownId = e.pointerId;
             pointerDownPos = { x: e.clientX, y: e.clientY };
-            pointerDownTouches = e.pointerType === 'touch' ? 1 : 0;
+            pointerMoved = false;
+        }, { passive: true });
+
+        renderer.domElement.addEventListener('pointermove', (e) => {
+            if (pointerDownId !== e.pointerId) return;
+            if (Math.hypot(e.clientX - pointerDownPos.x, e.clientY - pointerDownPos.y) > 10) pointerMoved = true;
         }, { passive: true });
 
         renderer.domElement.addEventListener('pointerup', (event) => {
             if (pointerDownId !== event.pointerId) return;
             pointerDownId = null;
-            if (pointerDownTouches > 1) return;
-            if (Math.hypot(event.clientX - pointerDownPos.x, event.clientY - pointerDownPos.y) > 8) return;
+            if (pointerMoved) return;
 
             const rect = renderer.domElement.getBoundingClientRect();
             mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
             mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
             raycaster.setFromCamera(mouse, camera);
 
-            const intersects = raycaster.intersectObjects(objetosInteractivos, false);
-            if (intersects.length > 0) {
-                const obj = intersects[0].object; 
-                let parentCheck = obj, esVisible = true;
-                while (parentCheck) { 
-                    if (parentCheck.visible === false) { esVisible = false; break; } 
-                    parentCheck = parentCheck.parent; 
-                }
-                if (!esVisible) return;
+            // Recursive = true: si el toque cae sobre una pieza hija del elemento interactivo,
+            // seguimos subiendo hasta encontrar el objeto registrado. Esto evita tener que tocar
+            // un punto "mágico" en medio del mueble.
+            const intersects = raycaster.intersectObjects(objetosInteractivos, true);
+            if (!intersects.length) return;
 
-                const data = obj.userData; 
-                if (!data) return;
-
-                const duration = 650, targetAbierto = !data.abierto;
-                if (data.tipo === 'extraible') {
-                    new TWEEN.Tween(data.grupo.position).to({ z: targetAbierto ? data.posZ_abierto : data.posZ_cerrado }, duration).easing(TWEEN.Easing.Cubic.Out).start();
-                } else if (data.tipo === 'puerta' || data.tipo === 'puerta_louver') {
-                    new TWEEN.Tween(data.grupo.rotation).to({ y: targetAbierto ? data.rotY_abierto : data.rotY_cerrado }, duration).easing(TWEEN.Easing.Cubic.Out).start();
-                } else if (data.tipo === 'tapa_asador') {
-                    new TWEEN.Tween(data.grupo.rotation).to({ x: targetAbierto ? data.rotX_abierto : data.rotX_cerrado }, duration).easing(TWEEN.Easing.Back.Out).start();
-                } else if (data.tipo === 'cortina') {
-                    new TWEEN.Tween(data.meshVisual.scale).to({ y: targetAbierto ? data.escala_abierto : data.escala_cerrado }, 1000).easing(TWEEN.Easing.Cubic.InOut).start();
-                }
-                data.abierto = targetAbierto;
+            let obj = intersects[0].object;
+            let data = obj.userData;
+            while (obj && (!data || !data.tipo)) {
+                obj = obj.parent;
+                data = obj ? obj.userData : null;
             }
+            if (!obj || !data || !data.tipo) return;
+
+            let parentCheck = obj, esVisible = true;
+            while (parentCheck) {
+                if (parentCheck.visible === false) { esVisible = false; break; }
+                parentCheck = parentCheck.parent;
+            }
+            if (!esVisible) return;
+
+            const duration = 650;
+            const targetAbierto = !data.abierto;
+            if (data.tipo === 'extraible') {
+                new TWEEN.Tween(data.grupo.position)
+                    .to({ z: targetAbierto ? data.posZ_abierto : data.posZ_cerrado }, duration)
+                    .easing(TWEEN.Easing.Cubic.Out).start();
+            } else if (data.tipo === 'puerta' || data.tipo === 'puerta_louver') {
+                new TWEEN.Tween(data.grupo.rotation)
+                    .to({ y: targetAbierto ? data.rotY_abierto : data.rotY_cerrado }, duration)
+                    .easing(TWEEN.Easing.Cubic.Out).start();
+            } else if (data.tipo === 'tapa_asador') {
+                new TWEEN.Tween(data.grupo.rotation)
+                    .to({ x: targetAbierto ? data.rotX_abierto : data.rotX_cerrado }, duration)
+                    .easing(TWEEN.Easing.Back.Out).start();
+            } else if (data.tipo === 'cortina') {
+                new TWEEN.Tween(data.meshVisual.scale)
+                    .to({ y: targetAbierto ? data.escala_abierto : data.escala_cerrado }, 1000)
+                    .easing(TWEEN.Easing.Cubic.InOut).start();
+            }
+            data.abierto = targetAbierto;
         });
         renderer.domElement.addEventListener('pointercancel', () => { pointerDownId = null; }, { passive: true });
 
@@ -2264,7 +2349,8 @@ renderer.toneMappingExposure = 1.02;
 
 <script>
 /* V3.1 build marker: geometry intentionally inherited unchanged from V3. */
-document.documentElement.dataset.build = "V4.2-REALISTA-INTERACCIONES";
+document.documentElement.dataset.build = "V4.3-MUEBLES-REALISTAS";
 </script>
+<script>document.documentElement.dataset.build="V4.4-PRESENTACION-ORGANICA";</script>
 </body>
 </html>
