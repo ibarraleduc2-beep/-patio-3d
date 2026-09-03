@@ -437,6 +437,9 @@
         const posX_PierNichoDer = posX_NichoNorte + CONFIG.nicho.ancho;
         const anchoBarraExclusivo = posX_PierNichoIzq + grosorPier; 
 
+        // Exponer la configuración maestra para documentación, planos y cotizador.
+        window.CONFIG = CONFIG;
+
         // =========================================================================
         // 2. CONFIGURACIÓN DE ESCENA, CÁMARA, RENDERER Y CONTROLES
         // =========================================================================
@@ -479,6 +482,19 @@ renderer.toneMappingExposure = 1.08;
         controls.maxPolarAngle = Math.PI / 2 - 0.01;   
         controls.minDistance = 50; 
         controls.maxDistance = 3500;               
+        // Ajustes táctiles para iPhone/iPad: un dedo gira; dos dedos hacen zoom/pan.
+        controls.enablePan = true;
+        controls.rotateSpeed = 0.72;
+        controls.zoomSpeed = 0.9;
+        controls.panSpeed = 0.75;
+        controls.screenSpacePanning = true;
+        controls.touches.ONE = THREE.TOUCH.ROTATE;
+        controls.touches.TWO = THREE.TOUCH.DOLLY_PAN;
+        controls.zoomToCursor = false;
+        window.controls = controls;
+        window.scene = scene;
+        window.camera = camera;
+        window.renderer = renderer;
 
         const ambientLight = new THREE.AmbientLight(0xfff8ef, 0.34);
         scene.add(ambientLight);
@@ -1750,6 +1766,7 @@ renderer.toneMappingExposure = 1.08;
             { cat: "Piso y Pluvial", item: "Jardinera posterior con sustrato y botánica Monstera", cant: "1 Global", pu: 2900, id: "jardinera" },
             { cat: "Mano de Obra", item: "Instalación, nivelación en sitio, plomería de lavandería y sellado", cant: "1 Global", pu: 13500, id: "mano_obra" }
         ];
+        window.ITEMS_COTIZACION = ITEMS_COTIZACION;
 
         function calcularTotal() {
             let total = 0; 
@@ -1815,6 +1832,23 @@ renderer.toneMappingExposure = 1.08;
         }, 5000);
     </script>
 
+
+<!-- ===== CONTROLES MÓVILES V4 — navegación 3D ===== -->
+<div id="mobile3dControls" aria-label="Controles 3D">
+  <button data-action="reset" title="Restablecer vista">⌂</button>
+  <button data-action="zoomIn" title="Acercar">＋</button>
+  <button data-action="zoomOut" title="Alejar">−</button>
+</div>
+<div id="viewHint">1 dedo: girar · 2 dedos: zoom / mover</div>
+
+<style id="v4-mobile-controls">
+#mobile3dControls{position:fixed;left:14px;bottom:22px;z-index:99970;display:flex;gap:8px;padding:7px;border-radius:16px;background:rgba(15,23,42,.82);backdrop-filter:blur(10px);box-shadow:0 8px 24px rgba(0,0,0,.25)}
+#mobile3dControls button{width:42px;height:42px;border:1px solid rgba(255,255,255,.18);border-radius:12px;background:rgba(255,255,255,.08);color:#fff;font-size:22px;font-weight:700;line-height:1;cursor:pointer;-webkit-user-select:none;user-select:none}
+#mobile3dControls button:active{transform:scale(.94);background:rgba(255,255,255,.18)}
+#viewHint{position:fixed;left:50%;bottom:25px;transform:translateX(-50%);z-index:99960;padding:7px 12px;border-radius:14px;background:rgba(15,23,42,.68);color:#fff;font-size:11px;pointer-events:none;opacity:.9;transition:opacity .5s}
+@media(min-width:700px){#mobile3dControls{left:20px;bottom:20px}#viewHint{bottom:20px}}
+</style>
+
 <style id="v3-technical-system">
 /* ===== V3 — SISTEMA DE DOCUMENTACIÓN TÉCNICA ===== */
 #v3TopNav{
@@ -1879,6 +1913,7 @@ renderer.toneMappingExposure = 1.08;
 .v3Detail{
   display:grid;grid-template-columns:1fr 1fr;gap:10px
 }
+.v3TableWrap{overflow:auto}.v3CostInput{width:92px;padding:6px;border:1px solid #cfc9c0;border-radius:6px;background:#fff}.v3Total{display:flex;justify-content:space-between;align-items:center;margin-top:14px;padding:14px;border-radius:9px;background:#222;color:#fff}.v3Total strong{font-size:18px}.v3Table td{vertical-align:top}
 @media(max-width:600px){
   #v3TopNav{left:8px;right:8px;transform:none;justify-content:center}
   #v3TopNav button{padding:8px 9px;font-size:11px}
@@ -1923,10 +1958,10 @@ renderer.toneMappingExposure = 1.08;
             <p>Preparado para documentar Norte, Sur, Este y Oeste con cotas, niveles, aperturas y referencias constructivas.</p>
           </div>
           <div class="v3Detail">
-            <div class="v3Card"><h3>Elevación Norte</h3><p>Muros, aperturas, alturas y acabados.</p></div>
-            <div class="v3Card"><h3>Elevación Sur</h3><p>Muros, deck, mobiliario y referencias.</p></div>
-            <div class="v3Card"><h3>Elevación Este</h3><p>Elementos verticales y encuentros.</p></div>
-            <div class="v3Card"><h3>Elevación Oeste</h3><p>Elementos verticales y encuentros.</p></div>
+            <div class="v3Card"><h3>Elevación Norte</h3><p>Muro norte: 390 cm de ancho × 316 cm de alto. Incluye hueco de ventana y nicho norte.</p></div>
+            <div class="v3Card"><h3>Elevación Sur</h3><p>Muro falso + cobertizo sur. Se documentan deck, desagüe, puertas louver, cubierta y mobiliario.</p></div>
+            <div class="v3Card"><h3>Elevación Este</h3><p>Largo total 400 cm; tramo de ventana 265 cm; altura 316 cm.</p></div>
+            <div class="v3Card"><h3>Elevación Oeste</h3><p>Largo total 487 cm; muro de 220 cm de alto; vano de celosía de 300 × 100 cm.</p></div>
           </div>
         </div>
 
@@ -1982,6 +2017,7 @@ renderer.toneMappingExposure = 1.08;
           <div class="v3Item"><b>Espesor paneles</b><span id="v3Paneles">—</span></div>
           <div class="v3Item"><b>Espesor cubierta</b><span id="v3Techo">—</span></div>
         </div>
+        <div class="v3Card"><h3>Coordenadas maestras</h3><div id="v3MasterCoords" class="v3Grid"></div><p class="v3Note">Estas coordenadas son referencia de documentación y no alteran la geometría del modelo.</p></div>
         <div class="v3Card"><h3>Sistemas y acabados</h3>
           <p>Materiales, espesores, estructura, revestimientos y componentes se documentan aquí sin mezclar precios.</p>
           <div class="v3Legend"><span class="v3Badge">Madera</span><span class="v3Badge">Microcemento</span><span class="v3Badge">Metal</span><span class="v3Badge">Vidrio</span><span class="v3Badge">Instalaciones</span></div>
@@ -2007,14 +2043,13 @@ renderer.toneMappingExposure = 1.08;
   const costo=document.getElementById('v3Costo');
 
   function cfg(path, fallback='—'){
-    try{
-      return path.split('.').reduce((o,k)=>o && o[k], window.CONFIG) ?? fallback;
-    }catch(e){ return fallback; }
+    try{return path.split('.').reduce((o,k)=>o && o[k], window.CONFIG) ?? fallback;}catch(e){return fallback;}
   }
+  function money(v){return Number(v||0).toLocaleString('es-MX',{style:'currency',currency:'MXN',minimumFractionDigits:2});}
 
   function openPanel(section){
-    if(section==='3d'){ panel.classList.remove('open'); panel.setAttribute('aria-hidden','true'); return; }
-    panel.classList.add('open'); panel.setAttribute('aria-hidden','false');
+    if(section==='3d'){panel.classList.remove('open');panel.setAttribute('aria-hidden','true');return;}
+    panel.classList.add('open');panel.setAttribute('aria-hidden','false');
     planos.classList.toggle('active',section==='planos');
     ficha.classList.toggle('active',section==='ficha');
     costo.classList.toggle('active',section==='costo');
@@ -2024,63 +2059,77 @@ renderer.toneMappingExposure = 1.08;
     if(section==='costo') fillCosto();
     if(section==='planos') drawPlan();
   }
-
   buttons.forEach(b=>b.addEventListener('click',()=>openPanel(b.dataset.v3)));
   close.addEventListener('click',()=>openPanel('3d'));
-  panel.addEventListener('click',e=>{if(e.target===panel) openPanel('3d');});
-  document.addEventListener('keydown',e=>{if(e.key==='Escape') openPanel('3d');});
+  panel.addEventListener('click',e=>{if(e.target===panel)openPanel('3d');});
+  document.addEventListener('keydown',e=>{if(e.key==='Escape')openPanel('3d');});
 
-  document.querySelectorAll('#v3Planos > .v3Tabs button').forEach(btn=>{
-    btn.addEventListener('click',()=>{
-      document.querySelectorAll('#v3Planos > .v3Tabs button').forEach(x=>x.classList.remove('active'));
-      document.querySelectorAll('#v3Planos [data-content]').forEach(x=>x.classList.remove('active'));
-      btn.classList.add('active');
-      const target=document.querySelector('#v3Planos [data-content="'+btn.dataset.sheet+'"]');
-      if(target) target.classList.add('active');
-    });
-  });
+  document.querySelectorAll('#v3Planos > .v3Tabs button').forEach(btn=>btn.addEventListener('click',()=>{
+    document.querySelectorAll('#v3Planos > .v3Tabs button').forEach(x=>x.classList.remove('active'));
+    document.querySelectorAll('#v3Planos [data-content]').forEach(x=>x.classList.remove('active'));
+    btn.classList.add('active');
+    const target=document.querySelector('#v3Planos [data-content="'+btn.dataset.sheet+'"]');
+    if(target)target.classList.add('active');
+  }));
 
   function fillFicha(){
     document.getElementById('v3HInterior').textContent=cfg('cobertizo.hInteriorCloset')+' cm';
     document.getElementById('v3Desague').textContent=cfg('cobertizo.profDesague')+' cm';
     document.getElementById('v3Paneles').textContent=cfg('cobertizo.espesorPaneles')+' cm';
     document.getElementById('v3Techo').textContent=cfg('cobertizo.grosorTecho')+' cm';
+    const c=cfg('cobertizo.coordenadasMaestras',{});
+    document.getElementById('v3MasterCoords').innerHTML=['P1','P2','P3','P4'].map((p,i)=>'<div class="v3Item"><b>'+p+'</b><span>X '+c[['xP1','xP2','xP3','xP4'][i]]+' · Z '+c[['zP1','zP2','zP3','zP4'][i]]+'</span></div>').join('');
   }
 
   function fillCosto(){
-    const body=document.getElementById('v3CostoBody');
-    const items=window.ITEMS_COTIZACION;
+    const body=document.getElementById('v3CostoBody'),items=window.ITEMS_COTIZACION;
     if(!Array.isArray(items)){body.innerHTML='<div class="v3Card"><p>No se encontró una lista de partidas accesible.</p></div>';return;}
-    body.innerHTML='<div class="v3Card"><table class="v3Table"><thead><tr><th>Partida</th><th>Concepto</th><th>Unidad</th><th>Cantidad</th><th>Precio</th></tr></thead><tbody>'+
-      items.map((x,i)=>'<tr><td>'+(x.id||x.codigo||('P-'+String(i+1).padStart(2,'0')))+'</td><td>'+(x.descripcion||x.concepto||x.nombre||'—')+'</td><td>'+(x.unidad||'—')+'</td><td>'+(x.cantidad??'—')+'</td><td>'+(x.precio??x.precioUnitario??'—')+'</td></tr>').join('')+
-      '</tbody></table></div>';
+    let total=0;
+    const rows=items.map((x,i)=>{const v=Number(x.pu||0);total+=v;return '<tr><td>'+(x.id||('P-'+String(i+1).padStart(2,'0')))+'</td><td><b>'+x.cat+'</b><br>'+x.item+'</td><td>'+x.cant+'</td><td><input class="v3CostInput" data-cost-id="'+x.id+'" type="number" min="0" step="100" value="'+v+'"></td><td class="v3Subtotal" data-subtotal-id="'+x.id+'">'+money(v)+'</td></tr>';}).join('');
+    body.innerHTML='<div class="v3Card"><div class="v3TableWrap"><table class="v3Table"><thead><tr><th>ID</th><th>Concepto</th><th>Cantidad</th><th>Precio unit.</th><th>Subtotal</th></tr></thead><tbody>'+rows+'</tbody></table></div><div class="v3Total"><span>TOTAL ESTIMADO</span><strong id="v3GrandTotal">'+money(total)+'</strong></div><p class="v3Note">Los precios son editables y funcionan como estimación; la geometría se mantiene vinculada al CONFIG maestro.</p></div>';
+    body.querySelectorAll('.v3CostInput').forEach(inp=>inp.addEventListener('input',()=>{
+      let t=0;body.querySelectorAll('.v3CostInput').forEach(x=>{const n=Number(x.value)||0;t+=n;const cell=body.querySelector('[data-subtotal-id="'+x.dataset.costId+'"]');if(cell)cell.textContent=money(n);});
+      document.getElementById('v3GrandTotal').textContent=money(t);
+    }));
   }
 
   function drawPlan(){
-    const c=window.CONFIG?.cobertizo?.coordenadasMaestras;
-    const target=document.getElementById('v3PlantaSVG');
+    const c=window.CONFIG?.cobertizo?.coordenadasMaestras,target=document.getElementById('v3PlantaSVG');
     if(!c){target.innerHTML='<div class="v3Card"><p>No hay coordenadas maestras accesibles para generar la planta.</p></div>';return;}
     const pts=[[c.xP1,c.zP1],[c.xP2,c.zP2],[c.xP3,c.zP3],[c.xP4,c.zP4]];
-    const xs=pts.map(p=>Number(p[0])), zs=pts.map(p=>Number(p[1]));
-    const minX=Math.min(...xs),maxX=Math.max(...xs),minZ=Math.min(...zs),maxZ=Math.max(...zs);
-    const W=720,H=470,pad=70, sx=(W-2*pad)/(maxX-minX||1), sz=(H-2*pad)/(maxZ-minZ||1), s=Math.min(sx,sz);
-    const map=(x,z)=>[pad+(x-minX)*s,H-pad-(z-minZ)*s];
-    const p=pts.map(([x,z])=>map(x,z));
+    const xs=pts.map(p=>Number(p[0])),zs=pts.map(p=>Number(p[1])),minX=Math.min(...xs),maxX=Math.max(...xs),minZ=Math.min(...zs),maxZ=Math.max(...zs);
+    const W=760,H=500,pad=75,s=Math.min((W-2*pad)/(maxX-minX||1),(H-2*pad)/(maxZ-minZ||1));
+    const map=(x,z)=>[pad+(x-minX)*s,H-pad-(z-minZ)*s],p=pts.map(([x,z])=>map(x,z));
     const poly=p.map(q=>q.join(',')).join(' ');
-    target.innerHTML='<svg viewBox="0 0 '+W+' '+H+'" role="img" aria-label="Planta esquemática">'+
-      '<rect x="0" y="0" width="'+W+'" height="'+H+'" fill="#fff"/>'+
+    const dist=(a,b)=>Math.hypot(b[0]-a[0],b[1]-a[1]).toFixed(1);
+    target.innerHTML='<svg viewBox="0 0 '+W+' '+H+'" role="img" aria-label="Planta esquemática maestra">'+
+      '<rect width="100%" height="100%" fill="#fff"/>'+
       '<polygon points="'+poly+'" fill="#eeeae3" stroke="#222" stroke-width="3"/>'+
-      p.map((q,i)=>'<circle cx="'+q[0]+'" cy="'+q[1]+'" r="5" fill="#222"/><text x="'+(q[0]+8)+'" y="'+(q[1]-8)+'" font-size="12">P'+(i+1)+'</text>').join('')+
-      '<text x="'+pad+'" y="28" font-size="15" font-weight="700">PLANTA — ESQUEMA MAESTRO</text>'+
-      '<text x="'+pad+'" y="'+(H-22)+'" font-size="11">Geometría referenciada al CONFIG maestro · no sustituye plano ejecutivo firmado</text>'+
+      p.map((q,i)=>'<circle cx="'+q[0]+'" cy="'+q[1]+'" r="5" fill="#222"/><text x="'+(q[0]+9)+'" y="'+(q[1]-9)+'" font-size="12" font-weight="700">P'+(i+1)+'</text>').join('')+
+      '<text x="'+pad+'" y="28" font-size="16" font-weight="700">PLANTA — GEOMETRÍA MAESTRA</text>'+
+      '<text x="'+(p[0][0]+(p[1][0]-p[0][0])/2)+'" y="'+(p[0][1]-10)+'" font-size="12" text-anchor="middle">'+dist(pts[0],pts[1])+' cm</text>'+
+      '<text x="'+(p[1][0]+(p[2][0]-p[1][0])/2)+'" y="'+(p[1][1]-10)+'" font-size="12" text-anchor="middle">'+dist(pts[1],pts[2])+' cm</text>'+
+      '<text x="'+pad+'" y="'+(H-22)+'" font-size="11">P1–P4 = coordenadas maestras · medidas derivadas de CONFIG · no sustituye plano ejecutivo firmado</text>'+
       '</svg>';
   }
+
+  // Controles táctiles: se conectan después de que el módulo 3D haya inicializado.
+  window.addEventListener('load',()=>{
+    const hint=document.getElementById('viewHint');
+    setTimeout(()=>{if(hint)hint.style.opacity='0';},6000);
+    document.querySelectorAll('#mobile3dControls button').forEach(btn=>btn.addEventListener('click',()=>{
+      const c=window.controls,cam=window.camera;if(!c||!cam)return;
+      if(btn.dataset.action==='reset'){cam.position.set(195,240,580);c.target.set(195,100,200);c.update();}
+      if(btn.dataset.action==='zoomIn'){cam.position.lerp(c.target,.12);c.update();}
+      if(btn.dataset.action==='zoomOut'){cam.position.lerp(c.target,-.12);c.update();}
+    }));
+  });
 })();
 </script>
 
 <script>
 /* V3.1 build marker: geometry intentionally inherited unchanged from V3. */
-document.documentElement.dataset.build = "V3.1";
+document.documentElement.dataset.build = "V4.0-MOBILE-DOCS";
 </script>
 </body>
 </html>
