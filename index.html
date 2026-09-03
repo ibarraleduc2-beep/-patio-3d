@@ -447,7 +447,7 @@
         // =========================================================================
         const container = document.getElementById('canvas-container');
         const scene = new THREE.Scene();
-        scene.background = new THREE.Color(0x7f9eb6);
+        scene.background = new THREE.Color(0x5d7485);
 
         const camera = new THREE.PerspectiveCamera(42, window.innerWidth / window.innerHeight, 1, 6000);
         camera.position.set(235, 175, 520); 
@@ -489,7 +489,9 @@ renderer.toneMappingExposure = 0.96;
         const sunVector = new THREE.Vector3();
         sunVector.setFromSphericalCoords(1, Math.PI / 2 - sunElevation, sunAzimuth);
         sky.material.uniforms.sunPosition.value.copy(sunVector);
-        scene.add(sky);
+        // El cielo se usa para iluminación/reflejos, pero no se dibuja como fondo;
+        // un fondo azul gris sólido mantiene el contraste con los muros claros.
+        // scene.add(sky);
 
         // PMREM del cielo para que acero, vidrio y superficies pulidas reflejen
         // un entorno exterior en lugar de un rectángulo blanco de estudio.
@@ -503,7 +505,7 @@ renderer.toneMappingExposure = 0.96;
         // Mezcla muy suave: cielo dominante + relleno de estudio.
         // Esto evita reflejos blancos excesivos en el acero y conserva detalle en sombra.
         scene.environment = skyEnv;
-        scene.background = new THREE.Color(0x7f9eb6);
+        scene.background = new THREE.Color(0x5d7485);
 
         pmremGenerator.dispose();
 
@@ -2352,5 +2354,6 @@ renderer.toneMappingExposure = 0.96;
 document.documentElement.dataset.build = "V4.3-MUEBLES-REALISTAS";
 </script>
 <script>document.documentElement.dataset.build="V4.4-PRESENTACION-ORGANICA";</script>
+<script>document.documentElement.dataset.build="V4.5-FONDO-AZUL";</script>
 </body>
 </html>
