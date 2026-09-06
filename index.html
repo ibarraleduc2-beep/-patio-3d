@@ -349,9 +349,19 @@
         const textureYesoMineral = crearTexturaYesoMineral();
         const textureTecaDuelas = crearTexturaMaderaTecaDuelas();
 
-        const matBaseLambrin = new THREE.MeshStandardMaterial({ color: CONFIG.materiales.pvcMaderaBase.color, roughness: CONFIG.materiales.pvcMaderaBase.roughness });
-        const matListonLambrin = new THREE.MeshStandardMaterial({ map: textureTecaDuelas, roughness: 0.50, side: THREE.DoubleSide });
-        const matTecaLisa = new THREE.MeshStandardMaterial({ map: textureTecaDuelas, roughness: 0.55, side: THREE.DoubleSide });
+        // TKPVC Teca: mismo acabado/color en frentes de gabinetes,
+        // puertas/revestimientos del cobertizo y revestimiento interior del nicho.
+        const matTKPVC = new THREE.MeshStandardMaterial({
+            map: textureTecaDuelas,
+            color: CONFIG.materiales.tecaInterior.color,
+            roughness: 0.62,
+            bumpMap: textureTecaDuelas,
+            bumpScale: 0.18,
+            side: THREE.DoubleSide
+        });
+        const matBaseLambrin = matTKPVC;
+        const matListonLambrin = matTKPVC;
+        const matTecaLisa = matTKPVC;
         const matPVC = new THREE.MeshStandardMaterial({ color: CONFIG.materiales.pvcNegro.color, roughness: CONFIG.materiales.pvcNegro.roughness });
         const matTechoNegro = new THREE.MeshStandardMaterial({ color: CONFIG.materiales.techoNegroMate.color, metalness: CONFIG.materiales.techoNegroMate.metalness, roughness: CONFIG.materiales.techoNegroMate.roughness, side: THREE.DoubleSide });
         const matCanaleta = new THREE.MeshStandardMaterial({ color: CONFIG.materiales.canaletaZanja.color, metalness: CONFIG.materiales.canaletaZanja.metalness, roughness: CONFIG.materiales.canaletaZanja.roughness, side: THREE.DoubleSide });
@@ -361,7 +371,7 @@
         const matAluminioBlanco = new THREE.MeshStandardMaterial({ color: 0xf5f5f5, metalness: 0.25, roughness: 0.35 });
         const matMuro = new THREE.MeshStandardMaterial({ map: textureYesoMineral, color: CONFIG.materiales.muro.color, roughness: 0.90, metalness: 0.0, bumpMap: textureYesoMineral, bumpScale: 0.20, side: THREE.DoubleSide });
         const matRelieveMineral = new THREE.MeshStandardMaterial({ map: textureYesoMineral, color: 0xf4e6ce, roughness: 0.94, bumpMap: textureYesoMineral, bumpScale: 0.16, side: THREE.DoubleSide });
-        const matTecaInterior = new THREE.MeshStandardMaterial({ map: textureTecaDuelas, color: CONFIG.materiales.tecaInterior.color, roughness: 0.62, bumpMap: textureTecaDuelas, bumpScale: 0.18, side: THREE.DoubleSide });
+        const matTecaInterior = matTKPVC;
         const matLedCalido = new THREE.MeshBasicMaterial({ color: CONFIG.materiales.ledCalido.color });
         const matVidrio = new THREE.MeshPhysicalMaterial({ color: CONFIG.materiales.vidrioVentana.color, transparent: true, opacity: 0.16, roughness: 0.08, metalness: 0.1, transmission: 0.92, ior: 1.5, thickness: 0.08, attenuationDistance: 900, depthWrite: false, side: THREE.DoubleSide });
         const matAluminio = new THREE.MeshStandardMaterial({ color: CONFIG.materiales.marcoAluminio.color, metalness: 0.85, roughness: 0.2 });
@@ -891,7 +901,9 @@
             // Se coloca físicamente delante del vidrio para que el cambio sea inequívoco.
             const g = new THREE.Group();
             const zFront = 5.0;
-            const xLeft = 8, xRight = 285;
+            // La curva recorre el muro norte y TERMINA antes del nicho del
+            // refrigerador. No entra ni pasa por encima del cobertizo.
+            const xLeft = 8, xRight = posX_NichoNorte - 3.0;
             const yBottom = 124.5;
             const ptsTop = [
                 new THREE.Vector3(xLeft, 205, zFront),
@@ -903,8 +915,8 @@
                 new THREE.Vector3(178, 205, zFront),
                 new THREE.Vector3(205, 211, zFront),
                 new THREE.Vector3(235, 219, zFront),
-                new THREE.Vector3(260, 217, zFront),
-                new THREE.Vector3(xRight, 213, zFront)
+                new THREE.Vector3(xRight - 18, 216, zFront),
+                new THREE.Vector3(xRight, 210, zFront)
             ];
             const topCurve = new THREE.CatmullRomCurve3(ptsTop, false, 'centripetal', 0.35);
             const topPts = topCurve.getPoints(180);
@@ -944,14 +956,21 @@
         crearDetalleOrganicoMuroNorte();
 
 
-        const panelFondoGeneral = new THREE.Mesh(new THREE.BoxGeometry(anchoBarraExclusivo, (CONFIG.barra.altoTotal - topH / 2) - (topH / 2) * Math.cos(anguloPendiente) + (topD / 2) * Math.sin(anguloPendiente) - CONFIG.barra.altoZocalo + 0.2, 1.8), matPVC); panelFondoGeneral.position.set(anchoBarraExclusivo / 2, CONFIG.barra.altoZocalo + ((CONFIG.barra.altoTotal - topH / 2) - (topH / 2) * Math.cos(anguloPendiente) + (topD / 2) * Math.sin(anguloPendiente) - CONFIG.barra.altoZocalo + 0.2) / 2, 0.9); grupoMuroNorte.add(panelFondoGeneral);
-        const zocaloBarra = new THREE.Mesh(new THREE.BoxGeometry(anchoBarraExclusivo, CONFIG.barra.altoZocalo, CONFIG.barra.profundidadTotal), matPVC); zocaloBarra.position.set(anchoBarraExclusivo / 2, CONFIG.barra.altoZocalo / 2, CONFIG.barra.profundidadTotal / 2); zocaloBarra.receiveShadow = true; grupoMuroNorte.add(zocaloBarra);
-        const zocaloNichoNorte = new THREE.Mesh(new THREE.BoxGeometry(CONFIG.modulos.nichoNorte.ancho + grosorPier, CONFIG.barra.altoZocalo, CONFIG.barra.profundidadTotal), matPVC); zocaloNichoNorte.position.set(posX_NichoNorte + (CONFIG.modulos.nichoNorte.ancho - grosorPier) / 2, CONFIG.barra.altoZocalo / 2, CONFIG.barra.profundidadTotal / 2); zocaloNichoNorte.receiveShadow = true; grupoNichoNorte.add(zocaloNichoNorte);
+        const panelFondoGeneral = new THREE.Mesh(new THREE.BoxGeometry(anchoBarraExclusivo, (CONFIG.barra.altoTotal - topH / 2) - (topH / 2) * Math.cos(anguloPendiente) + (topD / 2) * Math.sin(anguloPendiente) - CONFIG.barra.altoZocalo + 0.2, 1.8), matTKPVC); panelFondoGeneral.position.set(anchoBarraExclusivo / 2, CONFIG.barra.altoZocalo + ((CONFIG.barra.altoTotal - topH / 2) - (topH / 2) * Math.cos(anguloPendiente) + (topD / 2) * Math.sin(anguloPendiente) - CONFIG.barra.altoZocalo + 0.2) / 2, 0.9); grupoMuroNorte.add(panelFondoGeneral);
+        const zocaloBarra = new THREE.Mesh(new THREE.BoxGeometry(anchoBarraExclusivo, CONFIG.barra.altoZocalo, CONFIG.barra.profundidadTotal), matTKPVC); zocaloBarra.position.set(anchoBarraExclusivo / 2, CONFIG.barra.altoZocalo / 2, CONFIG.barra.profundidadTotal / 2); zocaloBarra.receiveShadow = true; grupoMuroNorte.add(zocaloBarra);
+        const zocaloNichoNorte = new THREE.Mesh(new THREE.BoxGeometry(CONFIG.modulos.nichoNorte.ancho + grosorPier, CONFIG.barra.altoZocalo, CONFIG.barra.profundidadTotal), matTKPVC); zocaloNichoNorte.position.set(posX_NichoNorte + (CONFIG.modulos.nichoNorte.ancho - grosorPier) / 2, CONFIG.barra.altoZocalo / 2, CONFIG.barra.profundidadTotal / 2); zocaloNichoNorte.receiveShadow = true; grupoNichoNorte.add(zocaloNichoNorte);
 
-        function crearPierMicrocemento(posX, altoMax = CONFIG.barra.altoTotal, profundidad = CONFIG.barra.profundidadTotal, destinoGrupo = grupoMuroNorte) {
-            const pier = crearCaja(grosorPier, altoMax - CONFIG.barra.altoZocalo, profundidad, matMicrocemento); pier.position.set(posX + grosorPier / 2, CONFIG.barra.altoZocalo + (altoMax - CONFIG.barra.altoZocalo) / 2, profundidad / 2); destinoGrupo.add(pier); return pier;
+        function crearPierMicrocemento(posX, altoMax = CONFIG.barra.altoTotal, profundidad = CONFIG.barra.profundidadTotal, destinoGrupo = grupoMuroNorte, material = matMicrocemento) {
+            const pier = crearCaja(grosorPier, altoMax - CONFIG.barra.altoZocalo, profundidad, material);
+            pier.position.set(posX + grosorPier / 2, CONFIG.barra.altoZocalo + (altoMax - CONFIG.barra.altoZocalo) / 2, profundidad / 2);
+            destinoGrupo.add(pier);
+            return pier;
         }
-        crearPierMicrocemento(posX_Pier0, CONFIG.barra.altoTotal, CONFIG.barra.profundidadTotal, grupoMuroNorte); crearPierMicrocemento(posX_PierNichoIzq, hNichoTotal, CONFIG.barra.profundidadTotal, grupoNichoNorte); crearPierMicrocemento(posX_PierNichoDer, hNichoTotal, CONFIG.barra.profundidadTotal, grupoNichoNorte);
+        // Barra principal: microcemento negro.
+        crearPierMicrocemento(posX_Pier0, CONFIG.barra.altoTotal, CONFIG.barra.profundidadTotal, grupoMuroNorte, matMicrocemento);
+        // Exterior del nicho: mismo estuco orgánico que los muros.
+        crearPierMicrocemento(posX_PierNichoIzq, hNichoTotal, CONFIG.barra.profundidadTotal, grupoNichoNorte, matMuro);
+        crearPierMicrocemento(posX_PierNichoDer, hNichoTotal, CONFIG.barra.profundidadTotal, grupoNichoNorte, matMuro);
         function crearPanelDivisorInterno(posX, profundidad = CONFIG.barra.profundidadMueble - 4) { const panel = crearCaja(1.8, altoMueblesEstandar - 2, profundidad, matPVC); panel.position.set(posX, CONFIG.barra.altoZocalo + (altoMueblesEstandar - 2) / 2, profundidad / 2 + 1); grupoMuroNorte.add(panel); }
         crearPanelDivisorInterno(posX_ModIzq + (CONFIG.modulos.izquierdo.ancho / 2)); crearPanelDivisorInterno(posX_ModDer + (CONFIG.modulos.derecho.ancho / 2));
         function crearBoteBasuraAnchoHorizontal() {
@@ -1014,8 +1033,12 @@
                 maceta.position.set(x, CONFIG.barra.altoTotal, z);
                 grupoMuroNorte.add(maceta);
             }
-            crearMaceta(8, 8, 1.85);
-            crearMaceta(anchoBarraExclusivo - 8, 8, 1.85);
+            // Macetas grandes, pero completamente dentro de la huella de la barra.
+            // El centro se separa del borde más que el radio máximo de la maceta.
+            const margenMacetaX = 21;
+            const zMaceta = CONFIG.barra.profundidadTotal / 2;
+            crearMaceta(margenMacetaX, zMaceta, 1.85);
+            crearMaceta(anchoBarraExclusivo - margenMacetaX, zMaceta, 1.85);
         }
         construirJardineraYPlantas();
         const wallBounceLeft = new THREE.PointLight(0xffc98d, 0.7, 90, 2); wallBounceLeft.position.set(20, 95, 30); grupoMuroNorte.add(wallBounceLeft);
@@ -1102,7 +1125,8 @@
 
         function construirNichoNorte() {
             const startX = posX_NichoNorte, wNicho = CONFIG.modulos.nichoNorte.ancho, hNicho = hNichoTotal - CONFIG.barra.altoZocalo, profNicho = CONFIG.barra.profundidadTotal, centerX = startX + wNicho / 2;
-            const techoMicrocemento = crearCaja(wNicho + (grosorPier * 2), grosorPier, profNicho, matMicrocemento); techoMicrocemento.position.set(centerX, hNichoTotal + grosorPier / 2, profNicho / 2); grupoNichoNorte.add(techoMicrocemento);
+            // La cara exterior superior del nicho también es estuco, no negro.
+            const techoMicrocemento = crearCaja(wNicho + (grosorPier * 2), grosorPier, profNicho, matMuro); techoMicrocemento.position.set(centerX, hNichoTotal + grosorPier / 2, profNicho / 2); grupoNichoNorte.add(techoMicrocemento);
             const pisoInteriorNicho = crearCaja(wNicho, 1.2, profNicho, matTecaInterior); pisoInteriorNicho.position.set(centerX, CONFIG.barra.altoZocalo + 0.6, profNicho / 2); grupoNichoNorte.add(pisoInteriorNicho);
             const revestIzq = crearCaja(0.9, hNicho, profNicho, matTecaInterior); revestIzq.position.set(startX + 0.3, CONFIG.barra.altoZocalo + hNicho / 2, profNicho / 2); grupoNichoNorte.add(revestIzq);
             const revestDer = crearCaja(0.9, hNicho, profNicho, matTecaInterior); revestDer.position.set(startX + wNicho - 0.3, CONFIG.barra.altoZocalo + hNicho / 2, profNicho / 2); grupoNichoNorte.add(revestDer);
