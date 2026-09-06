@@ -131,10 +131,10 @@
                 techoNegroMate: { color: 0x1a1d20, metalness: 0.75, roughness: 0.35 },
                 canaletaZanja: { color: 0x0d0e10, metalness: 0.85, roughness: 0.25 },
                 microcemento: { color: 0x222426, roughness: 0.55 },
-                aceroInox: { color: 0xdedede, metalness: 0.90, roughness: 0.20 },
+                aceroInox: { color: 0x8b9295, metalness: 0.92, roughness: 0.30 },
                 aceroOscuro: { color: 0x24272a, metalness: 0.85, roughness: 0.30 },
-                muro: { color: 0xd8c3a5, roughness: 0.92 },
-                mineralBeige: { color: 0xd8c3a5, roughness: 0.92 },
+                muro: { color: 0xc9ad86, roughness: 0.98 },
+                mineralBeige: { color: 0xc9ad86, roughness: 0.98 },
                 ledCalido: { color: 0xffc27a, intensity: 0.9 },
                 vidrioVentana: { color: 0xbfe4fc, roughness: 0.05, opacity: 0.28 },
                 marcoAluminio: { color: 0x161616, metalness: 0.85, roughness: 0.2 },
@@ -157,7 +157,7 @@
 
         const container = document.getElementById('canvas-container');
         const scene = new THREE.Scene();
-        scene.background = new THREE.Color(0x6a8fae);
+        scene.background = new THREE.Color(0x566574);
 
         const camera = new THREE.PerspectiveCamera(42, window.innerWidth / window.innerHeight, 1, 6000);
         camera.position.set(195, 240, 580); 
@@ -168,7 +168,8 @@
         renderer.shadowMap.enabled = true;
         renderer.shadowMap.type = THREE.PCFSoftShadowMap;
         renderer.toneMapping = THREE.ACESFilmicToneMapping;
-        renderer.toneMappingExposure = 1.15;
+        renderer.outputColorSpace = THREE.SRGBColorSpace;
+        renderer.toneMappingExposure = 0.92;
         container.appendChild(renderer.domElement);
 
         const controls = new OrbitControls(camera, renderer.domElement);
@@ -178,9 +179,10 @@
         controls.minPolarAngle = 0.01; controls.maxPolarAngle = Math.PI / 2 - 0.01;   
         controls.minDistance = 50; controls.maxDistance = 3500;               
 
-        const ambientLight = new THREE.AmbientLight(0xffffff, 0.95); scene.add(ambientLight);
-        const dirLight = new THREE.DirectionalLight(0xfff7ea, 1.4); dirLight.position.set(-160, 430, 320); dirLight.castShadow = true; dirLight.shadow.mapSize.width = 2048; dirLight.shadow.mapSize.height = 2048; dirLight.shadow.bias = -0.0001; scene.add(dirLight);
-        const fillLight = new THREE.DirectionalLight(0x98bce0, 0.5); fillLight.position.set(250, 200, -150); scene.add(fillLight);
+        const ambientLight = new THREE.AmbientLight(0xf5eadb, 0.62); scene.add(ambientLight);
+        const hemiLight = new THREE.HemisphereLight(0xf7ead8, 0x303640, 0.72); scene.add(hemiLight);
+        const dirLight = new THREE.DirectionalLight(0xfff2df, 1.75); dirLight.position.set(-180, 460, 300); dirLight.castShadow = true; dirLight.shadow.mapSize.width = 3072; dirLight.shadow.mapSize.height = 3072; dirLight.shadow.camera.near = 1; dirLight.shadow.camera.far = 1800; dirLight.shadow.bias = -0.00015; scene.add(dirLight);
+        const fillLight = new THREE.DirectionalLight(0xd8dfe4, 0.28); fillLight.position.set(280, 240, -220); scene.add(fillLight);
 
         // =========================================================================
         // GENERADORES PROCEDIMENTALES DE TEXTURAS EN ALTA DEFINICIÓN
@@ -336,8 +338,8 @@
         const matAcero = new THREE.MeshStandardMaterial({ color: CONFIG.materiales.aceroInox.color, metalness: CONFIG.materiales.aceroInox.metalness, roughness: CONFIG.materiales.aceroInox.roughness, side: THREE.DoubleSide });
         const matAceroOscuro = new THREE.MeshStandardMaterial({ color: CONFIG.materiales.aceroOscuro.color, metalness: CONFIG.materiales.aceroOscuro.metalness, roughness: CONFIG.materiales.aceroOscuro.roughness, side: THREE.DoubleSide });
         const matAluminioBlanco = new THREE.MeshStandardMaterial({ color: 0xf5f5f5, metalness: 0.25, roughness: 0.35 });
-        const matMuro = new THREE.MeshStandardMaterial({ map: textureYesoMineral, color: CONFIG.materiales.muro.color, roughness: 0.94, side: THREE.DoubleSide });
-        const matRelieveMineral = new THREE.MeshStandardMaterial({ map: textureYesoMineral, color: 0xcdb38f, roughness: 0.97, side: THREE.DoubleSide });
+        const matMuro = new THREE.MeshStandardMaterial({ map: textureYesoMineral, color: CONFIG.materiales.muro.color, roughness: 0.98, metalness: 0.0, side: THREE.DoubleSide });
+        const matRelieveMineral = new THREE.MeshStandardMaterial({ map: textureYesoMineral, color: 0xc5a77d, roughness: 0.98, side: THREE.DoubleSide });
         const matLedCalido = new THREE.MeshBasicMaterial({ color: CONFIG.materiales.ledCalido.color });
         const matVidrio = new THREE.MeshPhysicalMaterial({ color: CONFIG.materiales.vidrioVentana.color, transparent: true, opacity: CONFIG.materiales.vidrioVentana.opacity, roughness: CONFIG.materiales.vidrioVentana.roughness, metalness: 0.1, transmission: 0.85, ior: 1.5, depthWrite: false, side: THREE.DoubleSide });
         const matAluminio = new THREE.MeshStandardMaterial({ color: CONFIG.materiales.marcoAluminio.color, metalness: 0.85, roughness: 0.2 });
@@ -863,35 +865,39 @@
         // El lambrín decorativo de los muros se elimina. Se conserva únicamente en los frentes del mobiliario.
         function crearDetalleOrganicoMuroNorte() {
             const g = new THREE.Group();
-            // Relieve mineral orgánico de baja altura para no interferir con la ventana existente.
-            const shape = new THREE.Shape();
-            shape.moveTo(8, 8);
-            shape.lineTo(8, 112);
-            shape.bezierCurveTo(28, 94, 44, 90, 62, 103);
-            shape.bezierCurveTo(82, 118, 104, 119, 126, 101);
-            shape.bezierCurveTo(146, 84, 166, 87, 190, 106);
-            shape.bezierCurveTo(204, 117, 220, 116, 238, 101);
-            shape.lineTo(238, 8); shape.closePath();
-            const geom = new THREE.ExtrudeGeometry(shape, { depth: 1.4, bevelEnabled: true, bevelThickness: 1.2, bevelSize: 1.0, bevelSegments: 3 });
-            const relieve = new THREE.Mesh(geom, matRelieveMineral);
-            relieve.rotation.x = Math.PI / 2;
-            relieve.position.set(0, CONFIG.barra.altoTotal + 2, 1.0);
-            relieve.castShadow = true; relieve.receiveShadow = true;
-            g.add(relieve);
-
-            // Línea LED cálida siguiendo el borde superior orgánico.
             const pts = [];
-            for (let i = 0; i <= 48; i++) {
-                const t = i / 48, x = 10 + t * 224;
-                const y = 104 + 13 * Math.sin(t * Math.PI * 2.7) + 7 * Math.sin(t * Math.PI * 5.4);
-                pts.push(new THREE.Vector3(x, CONFIG.barra.altoTotal + y, 2.6));
+            const x0 = 8, x1 = Math.min(272, posX_NichoNorte - 8);
+            for (let i = 0; i <= 80; i++) {
+                const t = i / 80;
+                const x = x0 + (x1 - x0) * t;
+                // Onda amplia y asimétrica, inspirada en estuco mediterráneo/japonés.
+                const y = 118 + 18 * Math.sin(t * Math.PI * 2.15 - 0.65) + 7 * Math.sin(t * Math.PI * 4.1 + 0.35);
+                pts.push(new THREE.Vector3(x, y, 1.25));
             }
             const curve = new THREE.CatmullRomCurve3(pts);
-            const led = new THREE.Mesh(new THREE.TubeGeometry(curve, 64, 0.65, 8, false), matLedCalido);
+            const relieve = new THREE.Mesh(
+                new THREE.TubeGeometry(curve, 128, 2.15, 10, false),
+                matRelieveMineral
+            );
+            relieve.castShadow = true;
+            relieve.receiveShadow = true;
+            g.add(relieve);
+
+            // Ranura luminosa fina sobre el relieve mineral.
+            const led = new THREE.Mesh(
+                new THREE.TubeGeometry(curve, 128, 0.52, 8, false),
+                matLedCalido
+            );
+            led.position.z = 1.35;
             g.add(led);
-            const glow = new THREE.PointLight(CONFIG.materiales.ledCalido.color, 1.2, 115, 2);
-            glow.position.set(120, CONFIG.barra.altoTotal + 82, 10);
-            g.add(glow);
+
+            // Luz de rebote sobre el estuco, no una línea blanca plana.
+            const glow1 = new THREE.PointLight(0xffc27a, 2.2, 150, 2);
+            glow1.position.set(90, 135, 18);
+            g.add(glow1);
+            const glow2 = new THREE.PointLight(0xffc27a, 1.6, 125, 2);
+            glow2.position.set(205, 145, 18);
+            g.add(glow2);
             grupoMuroNorte.add(g);
         }
         crearDetalleOrganicoMuroNorte();
@@ -925,28 +931,54 @@
         if (profRestanteAtras > 0) { const cubAtrasAsador = crearCaja(wAsador, topH, profRestanteAtras, matMicrocemento); cubAtrasAsador.position.set(posX_ModAsador + wAsador / 2, CONFIG.barra.altoTotal - topH / 2, profRestanteAtras / 2); grupoMuroNorte.add(cubAtrasAsador); }
 
         function construirJardineraYPlantas() {
-            const profJard = CONFIG.jardinera.profundidad, anchoJard = anchoBarraExclusivo, posY_JardSurface = CONFIG.barra.altoTotal;
-            const canalTierra = crearCaja(anchoJard - 12, 2, profJard - 3, matTierra); canalTierra.position.set(anchoJard / 2, posY_JardSurface - 0.5, profJard / 2 + 1.5); grupoMuroNorte.add(canalTierra);
-            const bordeJardineraFrontal = crearCaja(anchoJard - 12, 1.5, 1.5, matMicrocemento); bordeJardineraFrontal.position.set(anchoJard / 2, posY_JardSurface + 0.75, profJard + 0.75); grupoMuroNorte.add(bordeJardineraFrontal);
+            // Se elimina por completo la jardinera corrida. Solo quedan dos macetas
+            // independientes en las esquinas de la barra.
             function crearHojaMonstera(w, h, mat) {
-                const shape = new THREE.Shape(); shape.moveTo(0, 0); shape.bezierCurveTo(w * 0.4, h * 0.2, w * 0.6, h * 0.5, w * 0.5, h * 0.85); shape.bezierCurveTo(w * 0.2, h, -w * 0.2, h, -w * 0.5, h * 0.85); shape.bezierCurveTo(-w * 0.6, h * 0.5, -w * 0.4, h * 0.2, 0, 0);
-                const geom = new THREE.ShapeGeometry(shape, 12); const pos = geom.attributes.position; for (let p = 0; p < pos.count; p++) pos.setZ(p, Math.sin((Math.max(0, pos.getY(p)) / h) * Math.PI) * 4.5 - Math.pow(pos.getX(p) / w, 2) * 1.5); geom.computeVertexNormals(); return new THREE.Mesh(geom, mat);
+                const shape = new THREE.Shape();
+                shape.moveTo(0, 0);
+                shape.bezierCurveTo(w * 0.4, h * 0.2, w * 0.6, h * 0.5, w * 0.5, h * 0.85);
+                shape.bezierCurveTo(w * 0.2, h, -w * 0.2, h, -w * 0.5, h * 0.85);
+                shape.bezierCurveTo(-w * 0.6, h * 0.5, -w * 0.4, h * 0.2, 0, 0);
+                const geom = new THREE.ShapeGeometry(shape, 12);
+                const pos = geom.attributes.position;
+                for (let p = 0; p < pos.count; p++) pos.setZ(p, Math.sin((Math.max(0, pos.getY(p)) / h) * Math.PI) * 4.5 - Math.pow(pos.getX(p) / w, 2) * 1.5);
+                geom.computeVertexNormals();
+                return new THREE.Mesh(geom, mat);
             }
-            function crearMataMonstera(matsHoja) {
+            function crearMataMonstera(matsHoja, escala = 1) {
                 const mataGroup = new THREE.Group(), numHojas = 5 + Math.floor(Math.random() * 3);
                 for (let idx = 0; idx < numHojas; idx++) {
-                    const matH = matsHoja[idx % matsHoja.length], ramaGroup = new THREE.Group(), altTallo = 14 + Math.random() * 18, tallo = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.6, altTallo, 8), matH);
+                    const matH = matsHoja[idx % matsHoja.length], ramaGroup = new THREE.Group();
+                    const altTallo = (14 + Math.random() * 18) * escala;
+                    const tallo = new THREE.Mesh(new THREE.CylinderGeometry(0.3 * escala, 0.6 * escala, altTallo, 8), matH);
                     tallo.position.y = altTallo / 2; ramaGroup.add(tallo);
-                    const hojaMesh = crearHojaMonstera(11 + Math.random() * 6, 18 + Math.random() * 10, matH); hojaMesh.position.y = altTallo; ramaGroup.add(hojaMesh);
-                    ramaGroup.rotation.set(Math.random() * 0.35 + 0.15, (Math.random() - 0.5) * Math.PI * 0.7, (Math.random() * 0.45 + 0.1) * (Math.random() > 0.5 ? 1 : -1)); mataGroup.add(ramaGroup);
-                } return mataGroup;
+                    const hojaMesh = crearHojaMonstera((11 + Math.random() * 6) * escala, (18 + Math.random() * 10) * escala, matH);
+                    hojaMesh.position.y = altTallo; ramaGroup.add(hojaMesh);
+                    ramaGroup.rotation.set(Math.random() * 0.35 + 0.15, (Math.random() - 0.5) * Math.PI * 0.7, (Math.random() * 0.45 + 0.1) * (Math.random() > 0.5 ? 1 : -1));
+                    mataGroup.add(ramaGroup);
+                }
+                return mataGroup;
             }
-            const matsHojaArray = [matLeafDark, matLeafMid, matLeafLight];
-            for (let i = 0; i < 11; i++) {
-                const planta = crearMataMonstera(matsHojaArray); planta.position.set(12 + (i * ((anchoJard - 24) / 11)) + (Math.random() * 3 - 1.5), posY_JardSurface, 6 + Math.random() * (profJard - 8)); planta.scale.setScalar(0.85 + Math.random() * 0.3); grupoMuroNorte.add(planta);
+            function crearMaceta(x, z, escala = 1) {
+                const maceta = new THREE.Group();
+                const cuerpo = new THREE.Mesh(new THREE.CylinderGeometry(9 * escala, 7 * escala, 13 * escala, 24), new THREE.MeshStandardMaterial({ color: 0x29221d, roughness: 0.72 }));
+                cuerpo.position.y = 6.5 * escala;
+                maceta.add(cuerpo);
+                const tierra = new THREE.Mesh(new THREE.CylinderGeometry(7.1 * escala, 7.1 * escala, 0.9 * escala, 24), matTierra);
+                tierra.position.y = 13.1 * escala;
+                maceta.add(tierra);
+                const mata = crearMataMonstera([matLeafDark, matLeafMid, matLeafLight], escala);
+                mata.position.y = 13 * escala;
+                maceta.add(mata);
+                maceta.position.set(x, CONFIG.barra.altoTotal, z);
+                grupoMuroNorte.add(maceta);
             }
+            crearMaceta(18, 46, 0.82);
+            crearMaceta(anchoBarraExclusivo - 18, 46, 0.82);
         }
         construirJardineraYPlantas();
+        const wallBounceLeft = new THREE.PointLight(0xffc98d, 0.7, 90, 2); wallBounceLeft.position.set(20, 95, 30); grupoMuroNorte.add(wallBounceLeft);
+        const wallBounceRight = new THREE.PointLight(0xffc98d, 0.55, 80, 2); wallBounceRight.position.set(anchoBarraExclusivo - 20, 95, 28); grupoMuroNorte.add(wallBounceRight);
 
         function construirModuloIzquierdo() {
             const wGabinete = CONFIG.modulos.izquierdo.ancho / 2, hGab = altoMueblesEstandar, dGab = CONFIG.barra.profundidadMueble, esp = 1.8;
@@ -1037,10 +1069,11 @@
             const revestFondo = crearCaja(wNicho - 1.2, hNicho, 0.8, matMuro); revestFondo.position.set(centerX, CONFIG.barra.altoZocalo + hNicho / 2, 0.4); grupoNichoNorte.add(revestFondo);
 
             const refriW = 92, refriH = 180, refriD = 80;
-            const refriBase = crearCaja(refriW, refriH, refriD, matAcero); refriBase.position.set(centerX, CONFIG.barra.altoZocalo + 1.2 + refriH / 2, refriD / 2 + 5); grupoNichoNorte.add(refriBase);
+            const matRefriGrafito = new THREE.MeshStandardMaterial({ color: 0x24282b, metalness: 0.78, roughness: 0.34 });
+            const refriBase = crearCaja(refriW, refriH, refriD, matRefriGrafito); refriBase.position.set(centerX, CONFIG.barra.altoZocalo + 1.2 + refriH / 2, refriD / 2 + 5); grupoNichoNorte.add(refriBase);
             const divRefri = crearCaja(1, refriH * 0.65, 2, matAceroOscuro); divRefri.position.set(centerX, CONFIG.barra.altoZocalo + 1.2 + refriH - (refriH * 0.65) / 2, refriD + 4); grupoNichoNorte.add(divRefri);
             const dispensador = crearCaja(14, 22, 1.5, matAceroOscuro); dispensador.position.set(centerX - refriW / 4, CONFIG.barra.altoZocalo + 1.2 + refriH * 0.6, refriD + 5.2); grupoNichoNorte.add(dispensador);
-            const m1 = new THREE.Mesh(new THREE.CylinderGeometry(1.2, 1.2, 42, 16), matAcero); m1.position.set(centerX - 4, CONFIG.barra.altoZocalo + 1.2 + refriH * 0.6, refriD + 6.5); grupoNichoNorte.add(m1);
+            const m1 = new THREE.Mesh(new THREE.CylinderGeometry(1.2, 1.2, 42, 16), matAceroOscuro); m1.position.set(centerX - 4, CONFIG.barra.altoZocalo + 1.2 + refriH * 0.6, refriD + 6.5); grupoNichoNorte.add(m1);
             const m2 = m1.clone(); m2.position.x = centerX + 4; grupoNichoNorte.add(m2);
 
             const guialateralIzq = crearCaja(2.5, hNicho - 4, 3, matMicrocemento); guialateralIzq.position.set(startX + 2, CONFIG.barra.altoZocalo + (hNicho - 4) / 2, profNicho - 1.5); grupoNichoNorte.add(guialateralIzq);
@@ -1127,7 +1160,7 @@
             </svg>`;
         }
         function generarDibujoElevacion() {
-            const w = CONFIG.muroNorte.ancho, h = 316, cLambrin = "#9e6332", cBaseLambrin = "#5c3619", cAcero = "#b8c0cc", cMicrocemento = "#2b2d30", cNegro = "#1a1a1a";
+            const w = CONFIG.muroNorte.ancho, h = 316, cLambrin = "#9e6332", cBaseLambrin = "#5c3619", cAcero = "#8b9295", cMicrocemento = "#2b2d30", cNegro = "#1a1a1a";
             let svg = `<svg viewBox="0 0 ${w} ${h}" width="100%" height="320" style="background:#ffffff; border:1px solid #cbd5e1; border-radius:8px;"><rect x="0" y="0" width="${w}" height="${h}" fill="#f8fafc" stroke="#cbd5e1" stroke-width="2"/>`;
             const yBase = h - CONFIG.barra.altoZocalo;
             // Fondo de estuco mineral beige; el lambrín mural ya no se representa.
@@ -1159,7 +1192,6 @@
             { cat: "Herrajes", item: "Rieles de extracción pesada + bisagras inox cierre suave", cant: "1 Juego", pu: 3400, id: "herrajes" },
             { cat: "Piso y Pluvial", item: "Piso de canto rodado negro de río grande ahogado en concreto claro pulido", cant: "16.8 m²", pu: 1350, id: "piso_piedras" },
             { cat: "Piso y Pluvial", item: "Foso pluvial (8cm profundidad) en Cobertizo Sur con rejilla Deck Teca a ras de piso", cant: "1 Global", pu: 4500, id: "foso_rejilla" },
-            { cat: "Piso y Pluvial", item: "Jardinera posterior con sustrato y botánica Monstera", cant: "1 Global", pu: 2900, id: "jardinera" },
             { cat: "Mano de Obra", item: "Instalación, nivelación en sitio, plomería de lavandería y sellado", cant: "1 Global", pu: 13500, id: "mano_obra" }
         ];
         function calcularTotal() {
