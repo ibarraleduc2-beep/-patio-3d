@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0">
-    <title>Visualizador 3D Interactivo - Patio Mineral Orgánico V6.2</title>
+    <title>Visualizador 3D Interactivo - Patio Mineral Orgánico V6.2.2</title>
     <style>
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         body { margin: 0; overflow: hidden; background-color: #5c7e9c; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; touch-action: none; user-select: none; }
@@ -65,14 +65,8 @@
         .cotizador-total { background: #0f172a; color: #ffffff; padding: 16px; border-radius: 10px; margin-top: 16px; display: flex; justify-content: space-between; align-items: center; font-weight: 700; font-size: 16px; }
         .input-costo { width: 85px; padding: 5px 8px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 12.5px; text-align: right; font-weight: 600; color: #0f172a; }
     </style>
-    <script type="importmap">
-        {
-            "imports": {
-                "three": "https://cdn.jsdelivr.net/npm/three@0.158.0/build/three.module.js",
-                "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.158.0/examples/jsm/"
-            }
-        }
-    </script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.158.0/build/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.158.0/examples/js/controls/OrbitControls.js"></script>
 </head>
 <body>
 
@@ -109,10 +103,7 @@
         </div>
     </div>
 
-    <script type="module">
-        import * as THREE from 'three';
-        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-
+    <script>
         try {
         // CONFIGURACIÓN GEOMÉTRICA EXACTA
         const CONFIG = {
@@ -197,7 +188,7 @@
         // reflejos y color consistentes tanto de cerca como de lejos.
         // V6.2.1: se evita PMREM/RoomEnvironment para maximizar compatibilidad con Safari/iOS.
 
-        const controls = new OrbitControls(camera, renderer.domElement);
+        const controls = new THREE.OrbitControls(camera, renderer.domElement);
         controls.target.set(195, 100, 200);
         controls.enableDamping = true;
         controls.dampingFactor = 0.06;
@@ -1217,8 +1208,18 @@
             }
         });
 
-        if (estadoCarga) estadoCarga.remove();
-        function animate(time) { requestAnimationFrame(animate); actualizarAnimaciones(time); controls.update(); renderer.render(scene, camera); } animate(performance.now());
+        let primeraRenderizacion = true;
+        function animate(time) {
+            requestAnimationFrame(animate);
+            actualizarAnimaciones(time);
+            controls.update();
+            renderer.render(scene, camera);
+            if (primeraRenderizacion) {
+                primeraRenderizacion = false;
+                requestAnimationFrame(() => { if (estadoCarga) estadoCarga.remove(); });
+            }
+        }
+        animate(performance.now());
         window.addEventListener('resize', () => { camera.aspect = window.innerWidth / window.innerHeight; camera.updateProjectionMatrix(); renderer.setSize(window.innerWidth, window.innerHeight); });
 
         const btnFicha = document.getElementById('btn-ficha'), modalFicha = document.getElementById('ficha-tecnica'), btnCerrar = document.getElementById('btn-cerrar-ficha'), fichaDataContainer = document.getElementById('ficha-data');
@@ -1335,7 +1336,7 @@
         setTimeout(() => { const inst = document.getElementById('instrucciones'); if(inst) { inst.style.opacity = '0'; setTimeout(() => inst.remove(), 800); } }, 5000);
         window.addEventListener('error', (event) => { console.error(event.error || event.message); });
         } catch (error) {
-            console.error('Visualizador V6.2.1:', error);
+            console.error('Visualizador V6.2.2:', error);
             if (estadoCarga) {
                 estadoCarga.style.display = 'flex';
                 estadoCarga.style.background = 'rgba(92,126,156,0.96)';
@@ -1346,6 +1347,17 @@
                 estadoCarga.textContent = 'No se pudo iniciar el visualizador 3D. Recarga la página.';
             }
         }
+    </script>
+    <script>
+        setTimeout(function(){
+            if (typeof THREE === 'undefined') {
+                var e=document.getElementById('estado-carga');
+                if(e){e.style.pointerEvents='auto';e.style.padding='24px';e.textContent='No se pudo cargar el motor 3D. El CDN no respondió. Recarga la página o revisa la conexión.';}
+            } else if (typeof THREE.OrbitControls === 'undefined') {
+                var e2=document.getElementById('estado-carga');
+                if(e2){e2.style.pointerEvents='auto';e2.style.padding='24px';e2.textContent='No se pudo cargar el control 3D. Recarga la página.';}
+            }
+        }, 12000);
     </script>
 </body>
 </html>
