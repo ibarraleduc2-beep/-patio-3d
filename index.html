@@ -119,7 +119,11 @@
         const CONFIG = {
             muroNorte: { ancho: 390, alto: 316, grosor: 20 },
             muroEste: { largoTotal: 400, tramoNorte: 110, ventanaLargo: 265, tramoSur: 25, alto: 316, grosor: 20, alturaVidrio: 210 },
-            muroOeste: { largoTotal: 487, alto: 260, grosor: 20, inclinacion3cmAtZ412: 3, distanciaNorteHueco: 100, anchoHueco: 300, distanciaPisoHueco: 100, altoHueco: 100, vigaTamaño: 10, vigaSeparacionAprox: 7.2 },
+            muroOeste: { largoTotal: 487, alto: 260, grosor: 20, inclinacion3cmAtZ412: 3,
+                distanciaNorteHueco: 100, anchoHueco: 300, distanciaPisoHueco: 100,
+                altoHueco: 100, vigaTamaño: 10, vigaSeparacionAprox: 7.2,
+                // Altura vertical: 100 cm muro inferior + 100 cm vano + 60 cm muro superior = 260 cm.
+            },
             muroSur: { seg1Oeste: 215, seg2Sur: 86, seg3Oeste: 148, seg4Diag: 32, alto: 316, grosor: 20 },
             barra: { profundidadTotal: 100, profundidadMueble: 98, altoTotal: 90, grosorCubierta: 6, altoZocalo: 4, pendienteCubierta: 0.8 },
             modulos: { izquierdo: { ancho: 85.5 }, asador: { ancho: 91, profundidadCerrado: 67 }, derecho: { ancho: 85.5 }, nichoNorte: { ancho: 110 } },
@@ -134,9 +138,9 @@
                 microcemento: { color: 0x222426, roughness: 0.55 },
                 aceroInox: { color: 0xd0d3d3, metalness: 0.90, roughness: 0.20 },
                 aceroOscuro: { color: 0x24272a, metalness: 0.85, roughness: 0.30 },
-                muro: { color: 0xf3e4ca, roughness: 0.93 },
-                mineralBeige: { color: 0xf3e4ca, roughness: 0.93 },
-                tecaInterior: { color: 0x965c30, roughness: 0.62 },
+                muro: { color: 0xe3cfb0, roughness: 0.93 },
+                mineralBeige: { color: 0xe3cfb0, roughness: 0.93 },
+                tecaInterior: { color: 0xc18d5e, roughness: 0.62 },
                 ledCalido: { color: 0xffc27a, intensity: 0.9 },
                 vidrioVentana: { color: 0xd7e1e2, roughness: 0.12, opacity: 0.20 },
                 marcoAluminio: { color: 0x161616, metalness: 0.85, roughness: 0.2 },
@@ -158,6 +162,13 @@
         const topH = CONFIG.barra.grosorCubierta, topD = CONFIG.barra.profundidadTotal, anguloPendiente = Math.atan(CONFIG.barra.pendienteCubierta / topD);
 
         const container = document.getElementById('canvas-container');
+        // V6 AUDITORÍA / REFACTOR:
+        // - Material TKPVC compartido para continuidad de acabado.
+        // - Panel ondulado con límites geométricos exactos.
+        // - Plantas reubicadas a una zona segura de la cubierta.
+        // - Menor coste móvil: sombras 2048 y pixel ratio máximo 2.25.
+        // - Fábrica PBR para reducir duplicación de configuración.
+        // V6.0 — arquitectura refactorizada: materiales compartidos, geometría de revestimientos exacta, plantas acotadas y render móvil optimizado.
         const scene = new THREE.Scene();
         scene.background = new THREE.Color(0x687782);
         scene.fog = null; // Sin niebla: conserva color y contraste al alejar/acercar la cámara.
@@ -167,7 +178,7 @@
 
         const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false, powerPreference: 'high-performance' });
         renderer.setSize(window.innerWidth, window.innerHeight);
-        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 3.5));
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2.25));
         renderer.shadowMap.enabled = true;
         renderer.shadowMap.type = THREE.PCFSoftShadowMap;
         renderer.toneMapping = THREE.ACESFilmicToneMapping;
@@ -193,7 +204,7 @@
 
         const ambientLight = new THREE.AmbientLight(0xf2e6d5, 0.38); scene.add(ambientLight);
         const hemiLight = new THREE.HemisphereLight(0xfff3df, 0x35404b, 0.52); scene.add(hemiLight);
-        const dirLight = new THREE.DirectionalLight(0xffe6c7, 2.15); dirLight.position.set(-260, 520, 360); dirLight.castShadow = true; dirLight.shadow.mapSize.width = 4096; dirLight.shadow.mapSize.height = 4096; dirLight.shadow.camera.near = 1; dirLight.shadow.camera.far = 1900; dirLight.shadow.bias = -0.00008; dirLight.shadow.radius = 3; scene.add(dirLight);
+        const dirLight = new THREE.DirectionalLight(0xffe6c7, 2.15); dirLight.position.set(-260, 520, 360); dirLight.castShadow = true; dirLight.shadow.mapSize.width = 2048; dirLight.shadow.mapSize.height = 2048; dirLight.shadow.camera.near = 1; dirLight.shadow.camera.far = 1900; dirLight.shadow.bias = -0.00008; dirLight.shadow.radius = 3; scene.add(dirLight);
         const fillLight = new THREE.DirectionalLight(0xbfc9d2, 0.18); fillLight.position.set(320, 280, -280); scene.add(fillLight);
         const frontFill = new THREE.DirectionalLight(0xfff2dc, 0.42); frontFill.position.set(120, 220, 520); scene.add(frontFill);
 
@@ -206,7 +217,7 @@
             canvas.height = 1024;
             const ctx = canvas.getContext('2d');
 
-            ctx.fillStyle = "#8a5228";
+            ctx.fillStyle = "#c08a59";
             ctx.fillRect(0, 0, 1024, 1024);
 
             const numDuelas = 16;
@@ -215,10 +226,10 @@
             for (let d = 0; d < numDuelas; d++) {
                 const x0 = d * wDuela;
                 const tonoBase = 0.92 + Math.random() * 0.16;
-                ctx.fillStyle = `rgb(${Math.floor(146 * tonoBase)}, ${Math.floor(88 * tonoBase)}, ${Math.floor(44 * tonoBase)})`;
+                ctx.fillStyle = `rgb(${Math.floor(181 * tonoBase)}, ${Math.floor(132 * tonoBase)}, ${Math.floor(88 * tonoBase)})`;
                 ctx.fillRect(x0, 0, wDuela, 1024);
 
-                ctx.strokeStyle = "rgba(70, 38, 16, 0.18)";
+                ctx.strokeStyle = "rgba(82, 50, 25, 0.13)";
                 ctx.lineWidth = 1.5;
                 for (let v = 0; v < 14; v++) {
                     ctx.beginPath();
@@ -228,10 +239,10 @@
                     ctx.stroke();
                 }
 
-                ctx.fillStyle = "#2b1609";
+                ctx.fillStyle = "#58351d";
                 ctx.fillRect(x0 + wDuela - 2.5, 0, 2.5, 1024);
 
-                ctx.fillStyle = "rgba(255, 230, 200, 0.15)";
+                ctx.fillStyle = "rgba(255, 235, 210, 0.18)";
                 ctx.fillRect(x0, 0, 1.2, 1024);
             }
 
@@ -349,6 +360,20 @@
         const textureYesoMineral = crearTexturaYesoMineral();
         const textureTecaDuelas = crearTexturaMaderaTecaDuelas();
 
+        // V6: fábrica compacta para evitar configuraciones PBR repetidas.
+        function crearMaterialPBR(opciones = {}) {
+            return new THREE.MeshStandardMaterial({
+                color: opciones.color ?? 0xffffff,
+                metalness: opciones.metalness ?? 0,
+                roughness: opciones.roughness ?? 0.7,
+                map: opciones.map ?? null,
+                bumpMap: opciones.bumpMap ?? null,
+                bumpScale: opciones.bumpScale ?? 0,
+                envMapIntensity: opciones.envMapIntensity ?? 1,
+                side: opciones.side ?? THREE.FrontSide
+            });
+        }
+
         // TKPVC Teca: mismo acabado/color en frentes de gabinetes,
         // puertas/revestimientos del cobertizo y revestimiento interior del nicho.
         const matTKPVC = new THREE.MeshStandardMaterial({
@@ -366,11 +391,11 @@
         const matTechoNegro = new THREE.MeshStandardMaterial({ color: CONFIG.materiales.techoNegroMate.color, metalness: CONFIG.materiales.techoNegroMate.metalness, roughness: CONFIG.materiales.techoNegroMate.roughness, side: THREE.DoubleSide });
         const matCanaleta = new THREE.MeshStandardMaterial({ color: CONFIG.materiales.canaletaZanja.color, metalness: CONFIG.materiales.canaletaZanja.metalness, roughness: CONFIG.materiales.canaletaZanja.roughness, side: THREE.DoubleSide });
         const matMicrocemento = new THREE.MeshStandardMaterial({ color: CONFIG.materiales.microcemento.color, roughness: CONFIG.materiales.microcemento.roughness });
-        const matAcero = new THREE.MeshStandardMaterial({ color: CONFIG.materiales.aceroInox.color, metalness: CONFIG.materiales.aceroInox.metalness, roughness: CONFIG.materiales.aceroInox.roughness, envMapIntensity: 1.35, side: THREE.DoubleSide });
-        const matAceroOscuro = new THREE.MeshStandardMaterial({ color: CONFIG.materiales.aceroOscuro.color, metalness: CONFIG.materiales.aceroOscuro.metalness, roughness: CONFIG.materiales.aceroOscuro.roughness, side: THREE.DoubleSide });
+        const matAcero = crearMaterialPBR({ color: CONFIG.materiales.aceroInox.color, metalness: CONFIG.materiales.aceroInox.metalness, roughness: CONFIG.materiales.aceroInox.roughness, envMapIntensity: 1.35, side: THREE.DoubleSide });
+        const matAceroOscuro = crearMaterialPBR({ color: CONFIG.materiales.aceroOscuro.color, metalness: CONFIG.materiales.aceroOscuro.metalness, roughness: CONFIG.materiales.aceroOscuro.roughness, side: THREE.DoubleSide });
         const matAluminioBlanco = new THREE.MeshStandardMaterial({ color: 0xf5f5f5, metalness: 0.25, roughness: 0.35 });
         const matMuro = new THREE.MeshStandardMaterial({ map: textureYesoMineral, color: CONFIG.materiales.muro.color, roughness: 0.90, metalness: 0.0, bumpMap: textureYesoMineral, bumpScale: 0.20, side: THREE.DoubleSide });
-        const matRelieveMineral = new THREE.MeshStandardMaterial({ map: textureYesoMineral, color: 0xf4e6ce, roughness: 0.94, bumpMap: textureYesoMineral, bumpScale: 0.16, side: THREE.DoubleSide });
+        const matRelieveMineral = new THREE.MeshStandardMaterial({ map: textureYesoMineral, color: 0xe4d1b3, roughness: 0.94, bumpMap: textureYesoMineral, bumpScale: 0.16, side: THREE.DoubleSide });
         const matTecaInterior = matTKPVC;
         const matLedCalido = new THREE.MeshBasicMaterial({ color: CONFIG.materiales.ledCalido.color });
         const matVidrio = new THREE.MeshPhysicalMaterial({ color: CONFIG.materiales.vidrioVentana.color, transparent: true, opacity: 0.16, roughness: 0.08, metalness: 0.1, transmission: 0.92, ior: 1.5, thickness: 0.08, attenuationDistance: 900, depthWrite: false, side: THREE.DoubleSide });
@@ -903,9 +928,12 @@
             // ni separación posterior. La parte superior es ondulada; la parte
             // inferior queda a Y=125, por lo que cubre 95 cm y deja 66 cm de ventana.
             const g = new THREE.Group();
-            const zFront = 0.35;
-            const xLeft = -2.0;
-            const xRight = posX_NichoNorte + grosorPier;
+            // Revestimiento continuo: sin separación contra el muro norte,
+            // llega exactamente al muro oeste y remata en el borde exterior
+            // del nicho, sin invadirlo.
+            const zFront = 0.015;
+            const xLeft = 0.0;
+            const xRight = posX_PierNichoIzq;
             const yBottom = 125.0;
 
             const ptsTop = [
@@ -933,15 +961,13 @@
 
             const estuco = new THREE.Mesh(
                 new THREE.ExtrudeGeometry(shape, {
-                    depth: 0.9,
-                    bevelEnabled: true,
-                    bevelSegments: 3,
-                    bevelSize: 0.35,
-                    bevelThickness: 0.18
+                    depth: 20.0,
+                    bevelEnabled: false
                 }),
                 matMuro
             );
-            estuco.position.z = -0.45;
+            // Cara frontal exactamente a ras del frente del muro norte (Z=0).
+            estuco.position.z = -20.0;
             estuco.renderOrder = 12;
             estuco.material.depthTest = true;
             estuco.material.depthWrite = true;
@@ -954,7 +980,7 @@
                 new THREE.TubeGeometry(topCurve, 240, 0.38, 12, false),
                 new THREE.MeshBasicMaterial({ color: 0xffc985 })
             );
-            led.position.z = 0.55;
+            led.position.z = 0.05;
             led.renderOrder = 13;
             g.add(led);
 
@@ -1024,7 +1050,7 @@
                     tallo.position.y = altTallo / 2; ramaGroup.add(tallo);
                     const hojaMesh = crearHojaMonstera((11 + Math.random() * 6) * escala, (18 + Math.random() * 10) * escala, matH);
                     hojaMesh.position.y = altTallo; ramaGroup.add(hojaMesh);
-                    ramaGroup.rotation.set(Math.random() * 0.35 + 0.15, (Math.random() - 0.5) * Math.PI * 0.7, (Math.random() * 0.45 + 0.1) * (Math.random() > 0.5 ? 1 : -1));
+                    ramaGroup.rotation.set(Math.random() * 0.20 + 0.08, (Math.random() * 0.12) - 0.06, (Math.random() * 0.16) - 0.08);
                     mataGroup.add(ramaGroup);
                 }
                 return mataGroup;
@@ -1045,11 +1071,13 @@
             }
             // Macetas grandes, pero completamente dentro de la huella de la barra.
             // El centro se separa del borde más que el radio máximo de la maceta.
-            const margenMacetaX = 32;
+            // Zona segura: suficiente margen para que maceta + hojas
+            // permanezcan dentro de la superficie útil de la barra.
+            const margenMacetaX = 40;
             const zMaceta = 50;
-            const xDerechaSegura = anchoBarraModulos - 32;
-            crearMaceta(margenMacetaX, zMaceta, 1.55);
-            crearMaceta(xDerechaSegura, zMaceta, 1.55);
+            const xDerechaSegura = anchoBarraModulos - margenMacetaX;
+            crearMaceta(margenMacetaX, zMaceta, 1.20);
+            crearMaceta(xDerechaSegura, zMaceta, 1.20);
         }
         construirJardineraYPlantas();
         const wallBounceLeft = new THREE.PointLight(0xffc98d, 0.7, 90, 2); wallBounceLeft.position.set(20, 95, 30); grupoMuroNorte.add(wallBounceLeft);
@@ -1262,7 +1290,7 @@
                 <text x="${pS1[0] + 18}" y="${(pS1[1] + pS2[1]) / 2}" fill="#0f172a" font-size="10" font-weight="bold" text-anchor="middle">Sur 2: 98 cm</text>
                 <text x="${(pS2[0] + pS3[0]) / 2}" y="${pS2[1] + 16}" fill="#0f172a" font-size="10" font-weight="bold" text-anchor="middle">Sur 3: 148 cm</text>
                 <text x="${(pS3[0] + pS4[0]) / 2 - 12}" y="${(pS3[1] + pS4[1]) / 2 + 14}" fill="#0f172a" font-size="9" font-weight="bold" text-anchor="middle">Sur 4: 32 cm</text>
-                <text x="${pNO[0] - 28}" y="${pNO[1] + (487 * scale) / 2}" fill="#0f172a" font-size="11" font-weight="bold" transform="rotate(-90, ${pNO[0] - 28}, ${pNO[1] + (487 * scale) / 2})" text-anchor="middle">MURO OESTE: 487 cm (Celosía 300 + Muro 87)</text>
+                <text x="${pNO[0] - 28}" y="${pNO[1] + (487 * scale) / 2}" fill="#0f172a" font-size="11" font-weight="bold" transform="rotate(-90, ${pNO[0] - 28}, ${pNO[1] + (487 * scale) / 2})" text-anchor="middle">MURO OESTE: 487 cm · Vano 300 cm · 100 abajo + 60 arriba</text>
             </svg>`;
         }
         function generarDibujoElevacion() {
@@ -1317,7 +1345,7 @@
                         <ul>
                             <li><strong>Muro Norte:</strong> 390 cm × 316 cm (con Nicho Norte / Refrigerador).</li>
                             <li><strong>Muro Este:</strong> 400 cm totales (Ventanal de 265 cm).</li>
-                            <li><strong>Muro Oeste:</strong> 487 cm totales (Vano de celosía 300 cm y muro sólido sur 87 cm).</li>
+                            <li><strong>Muro Oeste:</strong> 487 cm de longitud; altura total 260 cm, con 100 cm de muro inferior + 100 cm de vano + 60 cm de muro superior; vano de 300 cm.</li>
                             <li><strong>Muro Sur 1 (Muro Falso Recto a 90°):</strong> Tramo de 215 cm de longitud ejecutado en bastidor de acero galvanizado con panel de cemento Durock de 1/2''.</li>
                             <li><strong>Cobertizo Sur (Lavandería y Drenaje):</strong> Muro Este de 98 cm, Muro Oeste de 87 cm, Fondo de 148 cm y Chaflán de 32 cm. Puertas de louver 100% en PVC Teca (puerta izquierda abre 180° plegándose al muro falso, puerta derecha abre 90°), zoclo superior de 11 cm sobre puertas, cubierta negra mate con zanja embutida directa y bajante vertical recto interior derecho (Oeste) al foso de 8 cm con rejilla Deck Teca, y Torre de lavado negra (5 cm al frente, 10 cm atrás, 2.5 cm a la izquierda).</li>
                         </ul>
