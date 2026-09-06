@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0">
-    <title>Visualizador 3D Interactivo - Patio Mineral Orgánico V4.7</title>
+    <title>Visualizador 3D Interactivo - Patio Mineral Orgánico V6.1</title>
     <style>
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         body { margin: 0; overflow: hidden; background-color: #5c7e9c; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; touch-action: none; user-select: none; }
@@ -78,7 +78,7 @@
 <body>
 
     <div id="canvas-container"></div>
-    <div id="instrucciones">Toca las puertas de louver, asador, cajones y persiana.<br>Arrastra 360° para rotar | Pellizca / Rueda para zoom</div>
+    <div id="instrucciones">Toca la puerta corrediza, asador, cajones y persiana.<br>Arrastra 360° para rotar | Pellizca / Rueda para zoom</div>
 
     <div id="ui-muros-container">
         <button id="btn-toggle-muros">
@@ -168,7 +168,8 @@
         // - Plantas reubicadas a una zona segura de la cubierta.
         // - Menor coste móvil: sombras 2048 y pixel ratio máximo 2.25.
         // - Fábrica PBR para reducir duplicación de configuración.
-        // V6.0 — arquitectura refactorizada: materiales compartidos, geometría de revestimientos exacta, plantas acotadas y render móvil optimizado.
+        // V6.1 — escalón de cobertizo: 5 cm en fondo, 4 cm en frente; caída total 1 cm hacia Z=400.
+        // V6.1 — arquitectura refactorizada: materiales compartidos, geometría de revestimientos exacta, plantas acotadas y render móvil optimizado.
         const scene = new THREE.Scene();
         scene.background = new THREE.Color(0x687782);
         scene.fog = null; // Sin niebla: conserva color y contraste al alejar/acercar la cámara.
@@ -575,9 +576,36 @@
             nichoSurGroup.add(pDer);
             
             const lenFront = Math.hypot(v0[0] - v4[0], v0[1] - v4[1]);
-            const pFrontalPit = new THREE.Mesh(new THREE.BoxGeometry(lenFront, profDesague, espP), matTecaLisa);
-            pFrontalPit.position.set((v0[0] + v4[0]) / 2, -profDesague / 2, 400);
-            nichoSurGroup.add(pFrontalPit);
+            // El antiguo foso/desagüe se elimina: el interior queda sobre un escalón
+            // de 5 cm, con caída total de 1 cm hacia el frente (Z=400).
+            const shapeEscalon = new THREE.Shape();
+            shapeEscalon.moveTo(v0[0], v0[1]);
+            shapeEscalon.lineTo(v1[0], v1[1]);
+            shapeEscalon.lineTo(v2[0], v2[1]);
+            shapeEscalon.lineTo(v3[0], v3[1]);
+            shapeEscalon.lineTo(v4[0], v4[1]);
+            shapeEscalon.closePath();
+
+            const hEscalonTrasero = 5.0;
+            const caidaFrontal = 1.0;
+            const profundidadEscalon = v1[1] - v0[1];
+            const geomEscalon = new THREE.ExtrudeGeometry(shapeEscalon, { depth: 1, bevelEnabled: false });
+            const posEscalon = geomEscalon.attributes.position;
+            for (let i = 0; i < posEscalon.count; i++) {
+                const x = posEscalon.getX(i);
+                const z = posEscalon.getY(i);
+                const capa = posEscalon.getZ(i);
+                const t = Math.max(0, Math.min(1, (z - v0[1]) / profundidadEscalon));
+                const ySuperior = hEscalonTrasero - (caidaFrontal * t);
+                posEscalon.setXYZ(i, x, capa > 0.5 ? ySuperior : 0, z);
+            }
+            posEscalon.needsUpdate = true;
+            geomEscalon.computeVertexNormals();
+            const escalonCobertizo = new THREE.Mesh(geomEscalon, matSueloPatio);
+            escalonCobertizo.name = 'Escalon_Cobertizo_5cm_Pendiente_1cm';
+            escalonCobertizo.receiveShadow = true;
+            escalonCobertizo.castShadow = false;
+            nichoSurGroup.add(escalonCobertizo);
 
             // Cielo raso interior plano a Y = 220 cm
             const shapePlanoCloset = new THREE.Shape();
@@ -697,54 +725,14 @@
             // TUBO BAJANTE RECTO Y VERTICAL 100% POR DENTRO DEL CLÓSET A LA DERECHA (OESTE)
             // =========================================================================
             // Conexión directa vertical desde el fondo de la zanja hacia abajo
-            const tuboBajanteInterior = new THREE.Mesh(new THREE.CylinderGeometry(2.0, 2.0, 222.0, 16), matAceroOscuro);
-            tuboBajanteInterior.position.set(v4[0] + 5.5, 108.0, 404.0); // Z = 404 cm (4 cm detrás de las puertas)
+            const tuboBajanteInterior = new THREE.Mesh(new THREE.CylinderGeometry(2.0, 2.0, 217.0, 16), matAceroOscuro);
+            tuboBajanteInterior.position.set(v4[0] + 5.5, 112.5, 404.0); // Termina sobre el nuevo escalón elevado.
             nichoSurGroup.add(tuboBajanteInterior);
 
-            // Codo de descarga inferior bajo la rejilla del foso
-            const codoDescargaFoso = new THREE.Mesh(new THREE.CylinderGeometry(2.2, 2.2, 8.0, 16), matAceroOscuro);
-            codoDescargaFoso.position.set(v4[0] + 5.5, -4.0, 404.0);
-            nichoSurGroup.add(codoDescargaFoso);
-
-            // Foso Pluvial (-8 cm) y Rejilla a ras de piso (Y=0)
-            const grupoPisoRejilla = new THREE.Group();
-            const geomBaseDesague = new THREE.ShapeGeometry(shapeTechoFront);
-            const posDesague = geomBaseDesague.attributes.position;
-            for (let i = 0; i < posDesague.count; i++) posDesague.setXYZ(i, posDesague.getX(i), -profDesague, posDesague.getY(i));
-            posDesague.needsUpdate = true; geomBaseDesague.computeVertexNormals();
-            grupoPisoRejilla.add(new THREE.Mesh(geomBaseDesague, new THREE.MeshStandardMaterial({ color: 0x111315, roughness: 0.9 })));
-
-            const coladeraFoso = new THREE.Mesh(new THREE.CylinderGeometry(6, 6, 0.6, 24), matAceroOscuro);
-            coladeraFoso.position.set((v1[0] + v2[0]) / 2, -profDesague + 0.3, (v1[1] + v0[1]) / 2);
-            grupoPisoRejilla.add(coladeraFoso);
-
-            const anchoTabla = 7, entrecalleRejilla = 1.2, pasoR = anchoTabla + entrecalleRejilla;
-            function getZLimitsAtX(xVal) {
-                const intersections = [], edges = [[v0, v1], [v1, v2], [v2, v3], [v3, v4], [v4, v0]];
-                for (let i = 0; i < edges.length; i++) {
-                    const p1 = edges[i][0], p2 = edges[i][1], minX = Math.min(p1[0], p2[0]), maxX = Math.max(p1[0], p2[0]);
-                    if (xVal >= minX - 0.01 && xVal <= maxX + 0.01 && minX !== maxX) {
-                        const t = (xVal - p1[0]) / (p2[0] - p1[0]); intersections.push(p1[1] + t * (p2[1] - p1[1]));
-                    } else if (Math.abs(xVal - p1[0]) < 0.01 && Math.abs(xVal - p2[0]) < 0.01) { intersections.push(p1[1], p2[1]); }
-                }
-                if (intersections.length >= 2) { intersections.sort((a, b) => a - b); return { zMin: intersections[0] + 0.6, zMax: intersections[intersections.length - 1] - 0.6 }; }
-                return null;
-            }
-
-            const minXPoly = Math.min(v0[0], v1[0], v2[0], v3[0], v4[0]), maxXPoly = Math.max(v0[0], v1[0], v2[0], v3[0], v4[0]);
-            for (let xR = minXPoly + 0.8 + pasoR / 2; xR <= maxXPoly - 0.8; xR += pasoR) {
-                const limits = getZLimitsAtX(xR);
-                if (limits) {
-                    const largoR = limits.zMax - limits.zMin;
-                    if (largoR > 2) {
-                        const tabla = crearCaja(anchoTabla, 1.8, largoR, matTecaLisa);
-                        tabla.position.set(xR, -0.9, (limits.zMin + limits.zMax) / 2);
-                        tabla.castShadow = true; tabla.receiveShadow = true;
-                        grupoPisoRejilla.add(tabla);
-                    }
-                }
-            }
-            nichoSurGroup.add(grupoPisoRejilla);
+            // =========================================================================
+            // DRENAJE DE PISO ELIMINADO EN V6.1
+            // No hay foso, coladera ni deck de madera en el interior.
+            // =========================================================================
 
             // =========================================================================
             // TORRE DE LAVADO Y SECADO (10 cm LIBRES ATRÁS, 5 cm LIBRES AL FRENTE)
@@ -795,108 +783,55 @@
             nichoSurGroup.add(torreGroup);
 
             // =========================================================================
-            // ZOCLO SUPERIOR DE 10 CM Y PUERTAS DE LOUVER EN PVC TECA (IZQ 180°, DER 90°)
+            // V6.1 — PUERTA CORREDIZA ÚNICA DE PVC TECA, AL FRENTE DEL MURO FALSO
+            // Abre hacia la izquierda y, al abrir, queda completamente delante del muro falso.
             // =========================================================================
-            const wHuecoNichoSur = v0[0] - v4[0]; 
-            const altoZocloSuperior = 11.0; // Espacio superior de ~10-11 cm entre puertas y techo
-            const hHojaLouver = 209.0; // Altura de puertas
-            const wHojaLouver = (wHuecoNichoSur - 1.2) / 2; 
-            const hSlat = 8.0; 
-            const pasoSlat = 6.4; 
-            const numSlats = Math.floor((hHojaLouver - 12.0) / pasoSlat);
+            const wHuecoNichoSur = v0[0] - v4[0];
+            const altoMarcoSuperior = 11.0;
+            const hPuertaCorrediza = 209.0;
+            const wPuertaCorrediza = wHuecoNichoSur - 2.0;
+            const zPlanoPuerta = 396.8; // 3.2 cm delante del plano frontal Z=400
 
-            // 1. Zoclo/Friso superior de 11 cm en madera PVC Teca
-            const zocloSuperiorPanel = crearCaja(wHuecoNichoSur + 2.0, altoZocloSuperior, 2.5, matTecaLisa);
-            zocloSuperiorPanel.position.set((v0[0] + v4[0]) / 2, 210.0 + (altoZocloSuperior / 2), 400.0);
-            nichoSurGroup.add(zocloSuperiorPanel);
+            // Friso superior que permanece fijo.
+            const frisoSuperior = crearCaja(wHuecoNichoSur + 2.0, altoMarcoSuperior, 2.5, matTecaLisa);
+            frisoSuperior.position.set((v0[0] + v4[0]) / 2, 210.0 + altoMarcoSuperior / 2, zPlanoPuerta);
+            nichoSurGroup.add(frisoSuperior);
 
-            // Chambranas laterales en madera PVC Teca
-            const chambranaIzq = crearCaja(3.5, 210.0, 3.5, matTecaLisa);
-            chambranaIzq.position.set(v0[0] - 1.75, 105.0, 400.0);
-            nichoSurGroup.add(chambranaIzq);
+            // Hoja corrediza única.
+            const puertaCorredizaGroup = new THREE.Group();
+            puertaCorredizaGroup.position.set((v0[0] + v4[0]) / 2, 0, zPlanoPuerta);
 
-            const chambranaDer = crearCaja(3.5, 210.0, 3.5, matTecaLisa);
-            chambranaDer.position.set(v4[0] + 1.75, 105.0, 400.0);
-            nichoSurGroup.add(chambranaDer);
+            const hojaCorrediza = crearHojaLouverTeca(wPuertaCorrediza, hPuertaCorrediza, true);
+            hojaCorrediza.position.set(0, 0, 0);
+            puertaCorredizaGroup.add(hojaCorrediza);
 
-            function crearHojaLouverTeca(wLeaf, hLeaf, isLeft) {
-                const leafGroup = new THREE.Group();
-                const grosorMarcoL = 3.5, anchoPerfil = 5.0;
+            // Riel superior y dos carros visibles discretamente.
+            const largoRiel = wPuertaCorrediza + 190.0;
+            const rielCorredizo = crearCaja(largoRiel, 2.2, 2.4, matAceroOscuro);
+            rielCorredizo.position.set(-92.0, 215.2, -1.0);
+            puertaCorredizaGroup.add(rielCorredizo);
 
-                const largueroIzq = crearCaja(anchoPerfil, hLeaf, grosorMarcoL, matTecaLisa);
-                largueroIzq.position.set(-wLeaf / 2 + anchoPerfil / 2, hLeaf / 2, 0); leafGroup.add(largueroIzq);
+            const carroIzq = crearCaja(5.0, 2.0, 5.0, matAceroOscuro);
+            carroIzq.position.set(-wPuertaCorrediza * 0.31, 212.8, -1.0);
+            puertaCorredizaGroup.add(carroIzq);
+            const carroDer = crearCaja(5.0, 2.0, 5.0, matAceroOscuro);
+            carroDer.position.set(wPuertaCorrediza * 0.31, 212.8, -1.0);
+            puertaCorredizaGroup.add(carroDer);
 
-                const largueroDer = crearCaja(anchoPerfil, hLeaf, grosorMarcoL, matTecaLisa);
-                largueroDer.position.set(wLeaf / 2 - anchoPerfil / 2, hLeaf / 2, 0); leafGroup.add(largueroDer);
+            const hitboxPuertaCorrediza = crearCaja(wPuertaCorrediza, hPuertaCorrediza, 4.5, new THREE.MeshBasicMaterial({ visible: false }));
+            hitboxPuertaCorrediza.position.set(0, hPuertaCorrediza / 2, 0);
+            puertaCorredizaGroup.add(hitboxPuertaCorrediza);
+            nichoSurGroup.add(puertaCorredizaGroup);
 
-                const travesañoSup = crearCaja(wLeaf - anchoPerfil * 2, anchoPerfil, grosorMarcoL, matTecaLisa);
-                travesañoSup.position.set(0, hLeaf - anchoPerfil / 2, 0); leafGroup.add(travesañoSup);
-
-                const travesañoInf = crearCaja(wLeaf - anchoPerfil * 2, anchoPerfil * 1.6, grosorMarcoL, matTecaLisa);
-                travesañoInf.position.set(0, (anchoPerfil * 1.6) / 2, 0); leafGroup.add(travesañoInf);
-
-                // Lamas inclinadas +38° (+0.21π) para que el filo exterior caiga HACIA ABAJO Y AFUERA
-                const wSlat = wLeaf - anchoPerfil * 2 + 0.4;
-                const slatsContainer = new THREE.Group();
-                slatsContainer.position.set(0, anchoPerfil * 1.6 + 2.0, 0);
-
-                for (let s = 0; s < numSlats; s++) {
-                    const slat = crearCaja(wSlat, hSlat, 0.9, matTecaLisa);
-                    slat.rotation.x = Math.PI * 0.21;
-                    slat.position.set(0, s * pasoSlat + (hSlat / 2), 0);
-                    slatsContainer.add(slat);
-                }
-                leafGroup.add(slatsContainer);
-
-                const manijaLouver = crearCaja(1.8, 22.0, 2.4, matAceroOscuro);
-                const posX_Manija = isLeft ? (-wLeaf / 2 + anchoPerfil + 4.0) : (wLeaf / 2 - anchoPerfil - 4.0);
-                manijaLouver.position.set(posX_Manija, hLeaf * 0.48, -grosorMarcoL / 2 - 1.2);
-                leafGroup.add(manijaLouver);
-
-                return leafGroup;
-            }
-
-            // Hoja Izquierda (Este): Abre 180° hacia el patio plegándose al muro
-            const pivotLouverIzq = new THREE.Group();
-            pivotLouverIzq.position.set(v0[0] - 2.0, 0, 400.0);
-            const hojaIzq = crearHojaLouverTeca(wHojaLouver, hHojaLouver, true);
-            hojaIzq.position.set(-wHojaLouver / 2, 0, 0);
-            pivotLouverIzq.add(hojaIzq);
-
-            const hitboxLouverIzq = crearCaja(wHojaLouver, hHojaLouver, 5, new THREE.MeshBasicMaterial({ visible: false }));
-            hitboxLouverIzq.position.set(-wHojaLouver / 2, hHojaLouver / 2, 0);
-            pivotLouverIzq.add(hitboxLouverIzq);
-            nichoSurGroup.add(pivotLouverIzq);
-
-            hitboxLouverIzq.userData = {
-                tipo: 'puerta_louver',
-                grupo: pivotLouverIzq,
+            hitboxPuertaCorrediza.userData = {
+                tipo: 'puerta_corrediza',
+                grupo: puertaCorredizaGroup,
                 abierto: false,
-                rotY_cerrado: 0,
-                rotY_abierto: -Math.PI // Apertura completa 180° hacia afuera
+                posX_cerrado: (v0[0] + v4[0]) / 2,
+                // Desplazamiento suficiente para despejar todo el vano y quedar frente al muro falso.
+                posX_abierto: (v0[0] + v4[0]) / 2 - wPuertaCorrediza - 4.0
             };
-            objetosInteractivos.push(hitboxLouverIzq);
-
-            // Hoja Derecha (Oeste): Abre 90° hacia el patio
-            const pivotLouverDer = new THREE.Group();
-            pivotLouverDer.position.set(v4[0] + 2.0, 0, 400.0);
-            const hojaDer = crearHojaLouverTeca(wHojaLouver, hHojaLouver, false);
-            hojaDer.position.set(wHojaLouver / 2, 0, 0);
-            pivotLouverDer.add(hojaDer);
-
-            const hitboxLouverDer = crearCaja(wHojaLouver, hHojaLouver, 5, new THREE.MeshBasicMaterial({ visible: false }));
-            hitboxLouverDer.position.set(wHojaLouver / 2, hHojaLouver / 2, 0);
-            pivotLouverDer.add(hitboxLouverDer);
-            nichoSurGroup.add(pivotLouverDer);
-
-            hitboxLouverDer.userData = {
-                tipo: 'puerta_louver',
-                grupo: pivotLouverDer,
-                abierto: false,
-                rotY_cerrado: 0,
-                rotY_abierto: Math.PI / 2 // Apertura a 90° hacia afuera
-            };
-            objetosInteractivos.push(hitboxLouverDer);
+            objetosInteractivos.push(hitboxPuertaCorrediza);
 
             grupoMuroSur.add(nichoSurGroup);
         }
@@ -1255,6 +1190,7 @@
                 const duration = 650, targetAbierto = !data.abierto;
                 if (data.tipo === 'extraible') new TWEEN.Tween(data.grupo.position).to({ z: targetAbierto ? data.posZ_abierto : data.posZ_cerrado }, duration).easing(TWEEN.Easing.Cubic.Out).start();
                 else if (data.tipo === 'puerta' || data.tipo === 'puerta_louver') new TWEEN.Tween(data.grupo.rotation).to({ y: targetAbierto ? data.rotY_abierto : data.rotY_cerrado }, duration).easing(TWEEN.Easing.Cubic.Out).start();
+                else if (data.tipo === 'puerta_corrediza') new TWEEN.Tween(data.grupo.position).to({ x: targetAbierto ? data.posX_abierto : data.posX_cerrado }, 800).easing(TWEEN.Easing.Cubic.InOut).start();
                 else if (data.tipo === 'tapa_asador') new TWEEN.Tween(data.grupo.rotation).to({ x: targetAbierto ? data.rotX_abierto : data.rotX_cerrado }, duration).easing(TWEEN.Easing.Back.Out).start();
                 else if (data.tipo === 'cortina') new TWEEN.Tween(data.meshVisual.scale).to({ y: targetAbierto ? data.escala_abierto : data.escala_cerrado }, 1000).easing(TWEEN.Easing.Cubic.InOut).start();
                 data.abierto = targetAbierto;
@@ -1316,7 +1252,7 @@
 
         const ITEMS_COTIZACION = [
             { cat: "Estructura y Muebles", item: "Estructura interna en PVC foam / perfilería impermeable", cant: "1 Global", pu: 7800, id: "pvc_cuerpo" },
-            { cat: "Estructura y Muebles", item: "Puertas dobles de louver 100% en PVC Teca (lamas 8cm) para Cobertizo Sur", cant: "1 Juego", pu: 7200, id: "puertas_louver" },
+            { cat: "Estructura y Muebles", item: "Puerta corrediza de PVC Teca para Cobertizo Sur, con riel superior", cant: "1 Pza", pu: 7200, id: "puerta_corrediza" },
             { cat: "Muro Falso", item: "Bastidor acero galvanizado + Panel Durock 1/2'' + Basecoat e impermeable en Muro 215 a 90°", cant: "6.8 m²", pu: 1150, id: "muro_durock" },
             { cat: "Cubiertas", item: "Cubiertas y costados de Microcemento negro mate 6cm", cant: "4.2 m²", pu: 1650, id: "microcemento" },
             { cat: "Cubiertas", item: "Techo negro mate con zanja embutida de captación y bajante interior al foso", cant: "1 Pza", pu: 6200, id: "techo_nicho_sur" },
@@ -1325,7 +1261,7 @@
             { cat: "Equipo", item: "Torre de lavado y secado en color negro (lado izquierdo Cobertizo Sur)", cant: "1 Pza", pu: 24500, id: "torre_lavado" },
             { cat: "Herrajes", item: "Rieles de extracción pesada + bisagras inox cierre suave", cant: "1 Juego", pu: 3400, id: "herrajes" },
             { cat: "Piso y Pluvial", item: "Piso de canto rodado negro de río grande ahogado en concreto claro pulido", cant: "16.8 m²", pu: 1350, id: "piso_piedras" },
-            { cat: "Piso y Pluvial", item: "Foso pluvial (8cm profundidad) en Cobertizo Sur con rejilla Deck Teca a ras de piso", cant: "1 Global", pu: 4500, id: "foso_rejilla" },
+            { cat: "Piso y Pluvial", item: "Escalón de piso de 5 cm en acabado de canto rodado, con pendiente de 1 cm hacia el frente", cant: "1 Global", pu: 2200, id: "escalon_cobertizo" },
             { cat: "Mano de Obra", item: "Instalación, nivelación en sitio, plomería de lavandería y sellado", cant: "1 Global", pu: 13500, id: "mano_obra" }
         ];
         function calcularTotal() {
@@ -1347,7 +1283,7 @@
                             <li><strong>Muro Este:</strong> 400 cm totales (Ventanal de 265 cm).</li>
                             <li><strong>Muro Oeste:</strong> 487 cm de longitud; altura total 260 cm, con 100 cm de muro inferior + 100 cm de vano + 60 cm de muro superior; vano de 300 cm.</li>
                             <li><strong>Muro Sur 1 (Muro Falso Recto a 90°):</strong> Tramo de 215 cm de longitud ejecutado en bastidor de acero galvanizado con panel de cemento Durock de 1/2''.</li>
-                            <li><strong>Cobertizo Sur (Lavandería y Drenaje):</strong> Muro Este de 98 cm, Muro Oeste de 87 cm, Fondo de 148 cm y Chaflán de 32 cm. Puertas de louver 100% en PVC Teca (puerta izquierda abre 180° plegándose al muro falso, puerta derecha abre 90°), zoclo superior de 11 cm sobre puertas, cubierta negra mate con zanja embutida directa y bajante vertical recto interior derecho (Oeste) al foso de 8 cm con rejilla Deck Teca, y Torre de lavado negra (5 cm al frente, 10 cm atrás, 2.5 cm a la izquierda).</li>
+                            <li><strong>Cobertizo Sur (Lavandería):</strong> Muro Este de 98 cm, Muro Oeste de 87 cm, Fondo de 148 cm y Chaflán de 32 cm. Puerta corrediza única de PVC Teca que abre hacia la izquierda y queda por delante del muro falso, zoclo superior de 11 cm sobre la puerta, cubierta negra mate con zanja embutida directa y bajante vertical recto interior derecho (Oeste), y Torre de lavado negra (5 cm al frente, 10 cm atrás, 2.5 cm a la izquierda).</li>
                         </ul>
                     </div>
                     <div class="data-section">
