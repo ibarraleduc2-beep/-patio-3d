@@ -112,6 +112,7 @@
     <script type="module">
         import * as THREE from 'three';
         import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+        import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
         import TWEEN from '@tweenjs/tween.js';
 
         // CONFIGURACIÓN GEOMÉTRICA EXACTA
@@ -131,10 +132,10 @@
                 techoNegroMate: { color: 0x1a1d20, metalness: 0.75, roughness: 0.35 },
                 canaletaZanja: { color: 0x0d0e10, metalness: 0.85, roughness: 0.25 },
                 microcemento: { color: 0x222426, roughness: 0.55 },
-                aceroInox: { color: 0xb2b5b6, metalness: 0.78, roughness: 0.27 },
+                aceroInox: { color: 0xd0d3d3, metalness: 0.90, roughness: 0.20 },
                 aceroOscuro: { color: 0x24272a, metalness: 0.85, roughness: 0.30 },
-                muro: { color: 0xd2bc9d, roughness: 0.93 },
-                mineralBeige: { color: 0xd2bc9d, roughness: 0.93 },
+                muro: { color: 0xe0ceb1, roughness: 0.93 },
+                mineralBeige: { color: 0xe0ceb1, roughness: 0.93 },
                 tecaInterior: { color: 0x8a5228, roughness: 0.62 },
                 ledCalido: { color: 0xffc27a, intensity: 0.9 },
                 vidrioVentana: { color: 0xd7e1e2, roughness: 0.12, opacity: 0.20 },
@@ -159,21 +160,29 @@
         const container = document.getElementById('canvas-container');
         const scene = new THREE.Scene();
         scene.background = new THREE.Color(0x687782);
-        scene.fog = new THREE.Fog(0x687782, 2600, 9000);
+        scene.fog = null; // Sin niebla: conserva color y contraste al alejar/acercar la cámara.
 
         const camera = new THREE.PerspectiveCamera(42, window.innerWidth / window.innerHeight, 1, 6000);
         camera.position.set(195, 240, 580); 
 
         const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false, powerPreference: 'high-performance' });
         renderer.setSize(window.innerWidth, window.innerHeight);
-        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2.5));
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 3.5));
         renderer.shadowMap.enabled = true;
         renderer.shadowMap.type = THREE.PCFSoftShadowMap;
         renderer.toneMapping = THREE.ACESFilmicToneMapping;
         renderer.outputColorSpace = THREE.SRGBColorSpace;
+        renderer.sortObjects = true;
         renderer.toneMappingExposure = 0.98;
         renderer.physicallyCorrectLights = true;
         container.appendChild(renderer.domElement);
+
+        // Entorno PBR para que acero inoxidable, vidrio y superficies minerales conserven
+        // reflejos y color consistentes tanto de cerca como de lejos.
+        const pmremGenerator = new THREE.PMREMGenerator(renderer);
+        const environmentScene = new RoomEnvironment(renderer);
+        scene.environment = pmremGenerator.fromScene(environmentScene, 0.04).texture;
+        pmremGenerator.dispose();
 
         const controls = new OrbitControls(camera, renderer.domElement);
         controls.target.set(195, 100, 200);
@@ -310,7 +319,7 @@
             const canvas = document.createElement('canvas');
             canvas.width = 1024; canvas.height = 1024;
             const ctx = canvas.getContext('2d');
-            ctx.fillStyle = '#e0ceb2'; ctx.fillRect(0, 0, 2048, 2048);
+            ctx.fillStyle = '#ead9bc'; ctx.fillRect(0, 0, 2048, 2048);
             ctx.save(); ctx.scale(2, 2);
             for (let i = 0; i < 18000; i++) {
                 const x = Math.random() * 1024, y = Math.random() * 1024;
@@ -351,10 +360,10 @@
         const matAceroOscuro = new THREE.MeshStandardMaterial({ color: CONFIG.materiales.aceroOscuro.color, metalness: CONFIG.materiales.aceroOscuro.metalness, roughness: CONFIG.materiales.aceroOscuro.roughness, side: THREE.DoubleSide });
         const matAluminioBlanco = new THREE.MeshStandardMaterial({ color: 0xf5f5f5, metalness: 0.25, roughness: 0.35 });
         const matMuro = new THREE.MeshStandardMaterial({ map: textureYesoMineral, color: CONFIG.materiales.muro.color, roughness: 0.90, metalness: 0.0, bumpMap: textureYesoMineral, bumpScale: 0.20, side: THREE.DoubleSide });
-        const matRelieveMineral = new THREE.MeshStandardMaterial({ map: textureYesoMineral, color: 0xd0b994, roughness: 0.94, bumpMap: textureYesoMineral, bumpScale: 0.16, side: THREE.DoubleSide });
+        const matRelieveMineral = new THREE.MeshStandardMaterial({ map: textureYesoMineral, color: 0xe2d0b2, roughness: 0.94, bumpMap: textureYesoMineral, bumpScale: 0.16, side: THREE.DoubleSide });
         const matTecaInterior = new THREE.MeshStandardMaterial({ map: textureTecaDuelas, color: CONFIG.materiales.tecaInterior.color, roughness: 0.62, bumpMap: textureTecaDuelas, bumpScale: 0.18, side: THREE.DoubleSide });
         const matLedCalido = new THREE.MeshBasicMaterial({ color: CONFIG.materiales.ledCalido.color });
-        const matVidrio = new THREE.MeshPhysicalMaterial({ color: CONFIG.materiales.vidrioVentana.color, transparent: true, opacity: CONFIG.materiales.vidrioVentana.opacity, roughness: CONFIG.materiales.vidrioVentana.roughness, metalness: 0.1, transmission: 0.92, ior: 1.5, thickness: 0.08, attenuationDistance: 900, depthWrite: false, side: THREE.DoubleSide });
+        const matVidrio = new THREE.MeshPhysicalMaterial({ color: CONFIG.materiales.vidrioVentana.color, transparent: true, opacity: 0.32, roughness: CONFIG.materiales.vidrioVentana.roughness, metalness: 0.1, transmission: 0.92, ior: 1.5, thickness: 0.08, attenuationDistance: 900, depthWrite: false, side: THREE.DoubleSide });
         const matAluminio = new THREE.MeshStandardMaterial({ color: CONFIG.materiales.marcoAluminio.color, metalness: 0.85, roughness: 0.2 });
         const matCortinaImpermeable = new THREE.MeshStandardMaterial({ color: CONFIG.materiales.cortinaMetalic.color, metalness: CONFIG.materiales.cortinaMetalic.metalness, roughness: CONFIG.materiales.cortinaMetalic.roughness });
         const matTierra = new THREE.MeshStandardMaterial({ color: CONFIG.materiales.tierra.color, roughness: CONFIG.materiales.tierra.roughness });
@@ -877,64 +886,62 @@
 
         // El lambrín decorativo de los muros se elimina. Se conserva únicamente en los frentes del mobiliario.
         function crearDetalleOrganicoMuroNorte() {
-            // Diseño orgánico de estuco: invade exactamente 95 cm de la parte
-            // inferior de la ventana (161 cm de alto), dejando 66 cm superiores
-            // de vidrio visibles. La pieza es una banda de estuco integrada al muro,
-            // con una curva suave y una línea LED cálida en el encuentro inferior.
+            // ESTUCO ORGÁNICO SOBRE LA VENTANA:
+            // la ventana mide 161 cm de alto (125–286). El estuco cubre exactamente
+            // 95 cm desde abajo (125–220), dejando 66 cm superiores de vidrio expuesto.
             const g = new THREE.Group();
-            const x0 = 8, x1 = 282;
-            const yBottom = 94;
-            const yTopBase = 220; // 95 cm cubiertos desde el borde inferior de la ventana; quedan 66 cm de vidrio arriba
+            const x0 = 8, x1 = 285;
+            const yBottom = 92;
             const ptsTop = [
-                new THREE.Vector3(x0, yTopBase - 3, 2.2),
-                new THREE.Vector3(42, yTopBase + 3, 2.2),
-                new THREE.Vector3(78, yTopBase + 7, 2.2),
-                new THREE.Vector3(112, yTopBase + 5, 2.2),
-                new THREE.Vector3(145, yTopBase - 3, 2.2),
-                new THREE.Vector3(177, yTopBase - 5, 2.2),
-                new THREE.Vector3(208, yTopBase + 4, 2.2),
-                new THREE.Vector3(240, yTopBase + 9, 2.2),
-                new THREE.Vector3(x1, yTopBase + 5, 2.2)
+                new THREE.Vector3(x0, 211, 2.8),
+                new THREE.Vector3(28, 216, 2.8),
+                new THREE.Vector3(55, 222, 2.8),
+                new THREE.Vector3(84, 225, 2.8),
+                new THREE.Vector3(112, 220, 2.8),
+                new THREE.Vector3(138, 212, 2.8),
+                new THREE.Vector3(165, 207, 2.8),
+                new THREE.Vector3(194, 214, 2.8),
+                new THREE.Vector3(225, 224, 2.8),
+                new THREE.Vector3(255, 220, 2.8),
+                new THREE.Vector3(x1, 216, 2.8)
             ];
             const ptsBottom = [
-                new THREE.Vector3(x0, yBottom, 2.2),
-                new THREE.Vector3(46, yBottom - 2, 2.2),
-                new THREE.Vector3(92, yBottom + 1, 2.2),
-                new THREE.Vector3(140, yBottom + 4, 2.2),
-                new THREE.Vector3(188, yBottom + 1, 2.2),
-                new THREE.Vector3(236, yBottom - 2, 2.2),
-                new THREE.Vector3(x1, yBottom + 1, 2.2)
+                new THREE.Vector3(x0, yBottom, 2.8),
+                new THREE.Vector3(60, yBottom + 2, 2.8),
+                new THREE.Vector3(120, yBottom + 4, 2.8),
+                new THREE.Vector3(180, yBottom + 2, 2.8),
+                new THREE.Vector3(240, yBottom + 1, 2.8),
+                new THREE.Vector3(x1, yBottom + 2, 2.8)
             ];
-            const topCurve = new THREE.CatmullRomCurve3(ptsTop);
-            const bottomCurve = new THREE.CatmullRomCurve3(ptsBottom);
-            topCurve.curveType = bottomCurve.curveType = 'centripetal';
-            topCurve.tension = bottomCurve.tension = 0.42;
-
+            const topCurve = new THREE.CatmullRomCurve3(ptsTop, false, 'centripetal', 0.35);
+            const bottomCurve = new THREE.CatmullRomCurve3(ptsBottom, false, 'centripetal', 0.35);
             const shape = new THREE.Shape();
-            const topPts = topCurve.getPoints(100);
+            const topPts = topCurve.getPoints(160);
             const botPts = bottomCurve.getPoints(100);
             shape.moveTo(topPts[0].x, topPts[0].y);
             topPts.forEach(p => shape.lineTo(p.x, p.y));
             for (let i = botPts.length - 1; i >= 0; i--) shape.lineTo(botPts[i].x, botPts[i].y);
             shape.closePath();
+
             const estuco = new THREE.Mesh(
-                new THREE.ExtrudeGeometry(shape, { depth: 2.6, bevelEnabled: true, bevelSegments: 3, bevelSize: 0.8, bevelThickness: 0.8 }),
-                matMuro
+                new THREE.ExtrudeGeometry(shape, { depth: 3.2, bevelEnabled: true, bevelSegments: 3, bevelSize: 0.65, bevelThickness: 0.65 }),
+                matRelieveMineral
             );
-            estuco.position.z = -0.3;
-            estuco.castShadow = true; estuco.receiveShadow = true;
+            estuco.position.z = 0.9;
+            estuco.castShadow = true;
+            estuco.receiveShadow = true;
             g.add(estuco);
 
-            // Línea LED integrada en el borde superior.
+            // Borde de luz cálida muy fino, integrado en la curva superior.
             const led = new THREE.Mesh(
-                new THREE.TubeGeometry(topCurve, 160, 0.42, 10, false),
-                new THREE.MeshBasicMaterial({ color: 0xffc27a })
+                new THREE.TubeGeometry(topCurve, 180, 0.30, 12, false),
+                new THREE.MeshBasicMaterial({ color: 0xffc985 })
             );
-            led.position.z = 2.9;
+            led.position.z = 4.25;
             g.add(led);
 
-            const glow = new THREE.PointLight(0xffbd73, 2.1, 190, 2);
-            glow.position.set(205, 132, 22);
+            const glow = new THREE.PointLight(0xffc27d, 1.45, 170, 2);
+            glow.position.set(190, 130, 28);
             g.add(glow);
             grupoMuroNorte.add(g);
         }
@@ -1011,8 +1018,8 @@
                 maceta.position.set(x, CONFIG.barra.altoTotal, z);
                 grupoMuroNorte.add(maceta);
             }
-            crearMaceta(11, 12, 1.35);
-            crearMaceta(anchoBarraExclusivo - 11, 12, 1.35);
+            crearMaceta(8, 8, 1.85);
+            crearMaceta(anchoBarraExclusivo - 8, 8, 1.85);
         }
         construirJardineraYPlantas();
         const wallBounceLeft = new THREE.PointLight(0xffc98d, 0.7, 90, 2); wallBounceLeft.position.set(20, 95, 30); grupoMuroNorte.add(wallBounceLeft);
@@ -1114,11 +1121,11 @@
             const refriW = 92, refriH = 180, refriD = 80;
             // Refrigerador French Door realista: cuerpo y cuatro superficies frontales
             // separadas para que las dos puertas superiores y el congelador sean visibles.
-            const matRefriInox = new THREE.MeshStandardMaterial({ color: 0xb8babc, metalness: 0.72, roughness: 0.30, envMapIntensity: 1.35 });
-            const matRefriBorde = new THREE.MeshStandardMaterial({ color: 0x8f9496, metalness: 0.82, roughness: 0.24, envMapIntensity: 1.25 });
-            const matRefriSombra = new THREE.MeshStandardMaterial({ color: 0x3b3f41, metalness: 0.65, roughness: 0.28 });
+            const matRefriInox = new THREE.MeshStandardMaterial({ color: 0xd5d8d8, metalness: 0.86, roughness: 0.24, envMapIntensity: 2.1 });
+            const matRefriBorde = new THREE.MeshStandardMaterial({ color: 0x9da2a3, metalness: 0.90, roughness: 0.20, envMapIntensity: 2.0 });
+            const matRefriSombra = new THREE.MeshStandardMaterial({ color: 0x5b6061, metalness: 0.55, roughness: 0.32 });
             const yRefriBase = CONFIG.barra.altoZocalo + 1.2;
-            const zFrenteRefri = refriD + 5.5;
+            const zFrenteRefri = refriD + 8.5;
             const refriBase = crearCaja(refriW, refriH, refriD, matRefriInox); refriBase.position.set(centerX, yRefriBase + refriH / 2, refriD / 2 + 5); grupoNichoNorte.add(refriBase);
 
             const gap = 0.9;
@@ -1133,7 +1140,7 @@
             const seamH = crearCaja(refriW - 3, 0.9, 2.5, matRefriSombra); seamH.position.set(centerX, yRefriBase + lowerH + 1.2, zFrenteRefri + 1.25); grupoNichoNorte.add(seamH);
 
             // Manijas verticales de las dos puertas francesas y manija horizontal del congelador.
-            const handleV = new THREE.MeshStandardMaterial({ color: 0x676c6e, metalness: 0.90, roughness: 0.20 });
+            const handleV = new THREE.MeshStandardMaterial({ color: 0x4e5557, metalness: 0.96, roughness: 0.16 });
             function agregarManijaVertical(x) {
                 const h = new THREE.Mesh(new THREE.CylinderGeometry(1.15, 1.15, 78, 18), handleV);
                 h.position.set(x, upperY, zFrenteRefri + 3.2); grupoNichoNorte.add(h);
