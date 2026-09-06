@@ -125,9 +125,9 @@
             modulos: { izquierdo: { ancho: 85.5 }, asador: { ancho: 91, profundidadCerrado: 67 }, derecho: { ancho: 85.5 }, nichoNorte: { ancho: 110 } },
             lambrinWall: { alto: 130 }, jardinera: { profundidad: 15 },
             materiales: {
-                pvcMaderaBase: { color: 0x442610, roughness: 0.85 },
-                pvcMaderaListon: { color: 0x9e6332, roughness: 0.50 },
-                pvcMaderaLiso: { color: 0x93592c, roughness: 0.55 },
+                pvcMaderaBase: { color: 0x4b2b16, roughness: 0.85 },
+                pvcMaderaListon: { color: 0xa66a38, roughness: 0.50 },
+                pvcMaderaLiso: { color: 0x9b6031, roughness: 0.55 },
                 pvcNegro: { color: 0x121212, roughness: 0.85 },
                 techoNegroMate: { color: 0x1a1d20, metalness: 0.75, roughness: 0.35 },
                 canaletaZanja: { color: 0x0d0e10, metalness: 0.85, roughness: 0.25 },
@@ -136,7 +136,7 @@
                 aceroOscuro: { color: 0x24272a, metalness: 0.85, roughness: 0.30 },
                 muro: { color: 0xf3e4ca, roughness: 0.93 },
                 mineralBeige: { color: 0xf3e4ca, roughness: 0.93 },
-                tecaInterior: { color: 0x8a5228, roughness: 0.62 },
+                tecaInterior: { color: 0x965c30, roughness: 0.62 },
                 ledCalido: { color: 0xffc27a, intensity: 0.9 },
                 vidrioVentana: { color: 0xd7e1e2, roughness: 0.12, opacity: 0.20 },
                 marcoAluminio: { color: 0x161616, metalness: 0.85, roughness: 0.2 },
@@ -488,6 +488,7 @@
         }
         grupoMuroEste.add(ventanaGroup);
 
+        // Muro Oeste V5.6: 100 cm abajo + 100 cm vano + 60 cm arriba = 260 cm total.
         const muroOesteGroup = new THREE.Group(); muroOesteGroup.rotation.y = Math.atan2(3, 412); 
         const distNH = CONFIG.muroOeste.distanciaNorteHueco; // 100
         const wHO = CONFIG.muroOeste.anchoHueco; // 300
@@ -903,8 +904,8 @@
             // inferior queda a Y=125, por lo que cubre 95 cm y deja 66 cm de ventana.
             const g = new THREE.Group();
             const zFront = 0.35;
-            const xLeft = 0.0;
-            const xRight = posX_PierNichoIzq;
+            const xLeft = -2.0;
+            const xRight = posX_NichoNorte + grosorPier;
             const yBottom = 125.0;
 
             const ptsTop = [
