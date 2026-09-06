@@ -112,8 +112,8 @@
     <script type="module">
         import * as THREE from 'three';
         import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-        import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 
+        try {
         // CONFIGURACIÓN GEOMÉTRICA EXACTA
         const CONFIG = {
             muroNorte: { ancho: 390, alto: 316, grosor: 20 },
@@ -169,10 +169,9 @@
         // - Fábrica PBR para reducir duplicación de configuración.
         // V6.2 — escalón de cobertizo: 5 cm en fondo, 4 cm en frente; caída total 1 cm hacia Z=400.
         // V6.2 — arquitectura refactorizada: materiales compartidos, geometría de revestimientos exacta, plantas acotadas y render móvil optimizado.
-        // V6.2 — elimina dependencia externa de TWEEN, reduce coste de GPU y añade protección de carga.
+        // V6.2.1 — elimina TWEEN y PMREM/RoomEnvironment, reduce coste de GPU y añade protección de carga.
         // V6.2 — cobertizo: escalón 5→4 cm con caída de 1 cm; sin foso, sin deck y una sola puerta corrediza.
         const estadoCarga = document.getElementById('estado-carga');
-        if (estadoCarga) estadoCarga.remove();
         const scene = new THREE.Scene();
         scene.background = new THREE.Color(0x687782);
         scene.fog = null; // Sin niebla: conserva color y contraste al alejar/acercar la cámara.
@@ -196,10 +195,7 @@
 
         // Entorno PBR para que acero inoxidable, vidrio y superficies minerales conserven
         // reflejos y color consistentes tanto de cerca como de lejos.
-        const pmremGenerator = new THREE.PMREMGenerator(renderer);
-        const environmentScene = new RoomEnvironment(renderer);
-        scene.environment = pmremGenerator.fromScene(environmentScene, 0.04).texture;
-        pmremGenerator.dispose();
+        // V6.2.1: se evita PMREM/RoomEnvironment para maximizar compatibilidad con Safari/iOS.
 
         const controls = new OrbitControls(camera, renderer.domElement);
         controls.target.set(195, 100, 200);
@@ -1221,6 +1217,7 @@
             }
         });
 
+        if (estadoCarga) estadoCarga.remove();
         function animate(time) { requestAnimationFrame(animate); actualizarAnimaciones(time); controls.update(); renderer.render(scene, camera); } animate(performance.now());
         window.addEventListener('resize', () => { camera.aspect = window.innerWidth / window.innerHeight; camera.updateProjectionMatrix(); renderer.setSize(window.innerWidth, window.innerHeight); });
 
@@ -1337,6 +1334,18 @@
         btnCerrar.addEventListener('click', () => modalFicha.classList.remove('active'));
         setTimeout(() => { const inst = document.getElementById('instrucciones'); if(inst) { inst.style.opacity = '0'; setTimeout(() => inst.remove(), 800); } }, 5000);
         window.addEventListener('error', (event) => { console.error(event.error || event.message); });
+        } catch (error) {
+            console.error('Visualizador V6.2.1:', error);
+            if (estadoCarga) {
+                estadoCarga.style.display = 'flex';
+                estadoCarga.style.background = 'rgba(92,126,156,0.96)';
+                estadoCarga.style.color = '#fff';
+                estadoCarga.style.padding = '24px';
+                estadoCarga.style.lineHeight = '1.5';
+                estadoCarga.style.pointerEvents = 'auto';
+                estadoCarga.textContent = 'No se pudo iniciar el visualizador 3D. Recarga la página.';
+            }
+        }
     </script>
 </body>
 </html>
