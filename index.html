@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0">
-    <title>Visualizador 3D Interactivo - Patio Mineral Orgánico V6.1</title>
+    <title>Visualizador 3D Interactivo - Patio Mineral Orgánico V6.2</title>
     <style>
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         body { margin: 0; overflow: hidden; background-color: #5c7e9c; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; touch-action: none; user-select: none; }
@@ -69,8 +69,7 @@
         {
             "imports": {
                 "three": "https://cdn.jsdelivr.net/npm/three@0.158.0/build/three.module.js",
-                "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.158.0/examples/jsm/",
-                "@tweenjs/tween.js": "https://unpkg.com/@tweenjs/tween.js@23.1.1/dist/tween.esm.js"
+                "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.158.0/examples/jsm/"
             }
         }
     </script>
@@ -78,6 +77,7 @@
 <body>
 
     <div id="canvas-container"></div>
+    <div id="estado-carga" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none;z-index:5;color:#fff;font-weight:700;font-size:14px;text-align:center;text-shadow:0 2px 8px rgba(0,0,0,.45)">Cargando visualizador…</div>
     <div id="instrucciones">Toca la puerta corrediza, asador, cajones y persiana.<br>Arrastra 360° para rotar | Pellizca / Rueda para zoom</div>
 
     <div id="ui-muros-container">
@@ -113,7 +113,6 @@
         import * as THREE from 'three';
         import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
         import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
-        import TWEEN from '@tweenjs/tween.js';
 
         // CONFIGURACIÓN GEOMÉTRICA EXACTA
         const CONFIG = {
@@ -168,8 +167,12 @@
         // - Plantas reubicadas a una zona segura de la cubierta.
         // - Menor coste móvil: sombras 2048 y pixel ratio máximo 2.25.
         // - Fábrica PBR para reducir duplicación de configuración.
-        // V6.1 — escalón de cobertizo: 5 cm en fondo, 4 cm en frente; caída total 1 cm hacia Z=400.
-        // V6.1 — arquitectura refactorizada: materiales compartidos, geometría de revestimientos exacta, plantas acotadas y render móvil optimizado.
+        // V6.2 — escalón de cobertizo: 5 cm en fondo, 4 cm en frente; caída total 1 cm hacia Z=400.
+        // V6.2 — arquitectura refactorizada: materiales compartidos, geometría de revestimientos exacta, plantas acotadas y render móvil optimizado.
+        // V6.2 — elimina dependencia externa de TWEEN, reduce coste de GPU y añade protección de carga.
+        // V6.2 — cobertizo: escalón 5→4 cm con caída de 1 cm; sin foso, sin deck y una sola puerta corrediza.
+        const estadoCarga = document.getElementById('estado-carga');
+        if (estadoCarga) estadoCarga.remove();
         const scene = new THREE.Scene();
         scene.background = new THREE.Color(0x687782);
         scene.fog = null; // Sin niebla: conserva color y contraste al alejar/acercar la cámara.
@@ -179,7 +182,9 @@
 
         const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false, powerPreference: 'high-performance' });
         renderer.setSize(window.innerWidth, window.innerHeight);
-        renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2.25));
+        // V6.2: limitar resolución interna en móviles para evitar sobrecarga de GPU.
+        const maxPixelRatio = Math.min(window.devicePixelRatio || 1, 1.75);
+        renderer.setPixelRatio(maxPixelRatio);
         renderer.shadowMap.enabled = true;
         renderer.shadowMap.type = THREE.PCFSoftShadowMap;
         renderer.toneMapping = THREE.ACESFilmicToneMapping;
@@ -205,7 +210,7 @@
 
         const ambientLight = new THREE.AmbientLight(0xf2e6d5, 0.38); scene.add(ambientLight);
         const hemiLight = new THREE.HemisphereLight(0xfff3df, 0x35404b, 0.52); scene.add(hemiLight);
-        const dirLight = new THREE.DirectionalLight(0xffe6c7, 2.15); dirLight.position.set(-260, 520, 360); dirLight.castShadow = true; dirLight.shadow.mapSize.width = 2048; dirLight.shadow.mapSize.height = 2048; dirLight.shadow.camera.near = 1; dirLight.shadow.camera.far = 1900; dirLight.shadow.bias = -0.00008; dirLight.shadow.radius = 3; scene.add(dirLight);
+        const dirLight = new THREE.DirectionalLight(0xffe6c7, 2.15); dirLight.position.set(-260, 520, 360); dirLight.castShadow = true; dirLight.shadow.mapSize.width = 1536; dirLight.shadow.mapSize.height = 1536; dirLight.shadow.camera.near = 1; dirLight.shadow.camera.far = 1900; dirLight.shadow.bias = -0.00008; dirLight.shadow.radius = 3; scene.add(dirLight);
         const fillLight = new THREE.DirectionalLight(0xbfc9d2, 0.18); fillLight.position.set(320, 280, -280); scene.add(fillLight);
         const frontFill = new THREE.DirectionalLight(0xfff2dc, 0.42); frontFill.position.set(120, 220, 520); scene.add(frontFill);
 
@@ -730,7 +735,7 @@
             nichoSurGroup.add(tuboBajanteInterior);
 
             // =========================================================================
-            // DRENAJE DE PISO ELIMINADO EN V6.1
+            // DRENAJE DE PISO ELIMINADO EN V6.2
             // No hay foso, coladera ni deck de madera en el interior.
             // =========================================================================
 
@@ -783,7 +788,7 @@
             nichoSurGroup.add(torreGroup);
 
             // =========================================================================
-            // V6.1 — PUERTA CORREDIZA ÚNICA DE PVC TECA, AL FRENTE DEL MURO FALSO
+            // V6.2 — PUERTA CORREDIZA ÚNICA DE PVC TECA, AL FRENTE DEL MURO FALSO
             // Abre hacia la izquierda y, al abrir, queda completamente delante del muro falso.
             // =========================================================================
             const wHuecoNichoSur = v0[0] - v4[0];
@@ -1178,6 +1183,25 @@
 
         const raycaster = new THREE.Raycaster(), mouse = new THREE.Vector2(); let pointerDownPos = { x: 0, y: 0 };
         window.addEventListener('pointerdown', (e) => pointerDownPos = { x: e.clientX, y: e.clientY });
+        // V6.2: animador local pequeño. Evita depender de un segundo CDN y reduce puntos de fallo al cargar en Safari/iOS.
+        const animaciones = [];
+        const easeCubicInOut = t => t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+        const easeCubicOut = t => 1 - Math.pow(1 - t, 3);
+        const easeBackOut = t => { const c1 = 1.70158, c3 = c1 + 1; return 1 + c3 * Math.pow(t - 1, 3) + c1 * Math.pow(t - 1, 2); };
+        function animar(obj, prop, to, duration = 650, easing = easeCubicOut) {
+            const from = Number(obj[prop]);
+            if (!Number.isFinite(from) || !Number.isFinite(to)) return;
+            for (let i = animaciones.length - 1; i >= 0; i--) if (animaciones[i].obj === obj && animaciones[i].prop === prop) animaciones.splice(i, 1);
+            animaciones.push({ obj, prop, from, to, duration, easing, start: performance.now() });
+        }
+        function actualizarAnimaciones(now) {
+            for (let i = animaciones.length - 1; i >= 0; i--) {
+                const a = animaciones[i];
+                const t = Math.min(1, Math.max(0, (now - a.start) / a.duration));
+                a.obj[a.prop] = a.from + (a.to - a.from) * a.easing(t);
+                if (t >= 1) animaciones.splice(i, 1);
+            }
+        }
         window.addEventListener('pointerup', (event) => {
             if (Math.hypot(event.clientX - pointerDownPos.x, event.clientY - pointerDownPos.y) > 6) return;
             mouse.x = (event.clientX / window.innerWidth) * 2 - 1; mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
@@ -1187,17 +1211,17 @@
                 while (parentCheck) { if (parentCheck.visible === false) { esVisible = false; break; } parentCheck = parentCheck.parent; }
                 if (!esVisible) return;
                 const data = obj.userData; if (!data) return;
-                const duration = 650, targetAbierto = !data.abierto;
-                if (data.tipo === 'extraible') new TWEEN.Tween(data.grupo.position).to({ z: targetAbierto ? data.posZ_abierto : data.posZ_cerrado }, duration).easing(TWEEN.Easing.Cubic.Out).start();
-                else if (data.tipo === 'puerta' || data.tipo === 'puerta_louver') new TWEEN.Tween(data.grupo.rotation).to({ y: targetAbierto ? data.rotY_abierto : data.rotY_cerrado }, duration).easing(TWEEN.Easing.Cubic.Out).start();
-                else if (data.tipo === 'puerta_corrediza') new TWEEN.Tween(data.grupo.position).to({ x: targetAbierto ? data.posX_abierto : data.posX_cerrado }, 800).easing(TWEEN.Easing.Cubic.InOut).start();
-                else if (data.tipo === 'tapa_asador') new TWEEN.Tween(data.grupo.rotation).to({ x: targetAbierto ? data.rotX_abierto : data.rotX_cerrado }, duration).easing(TWEEN.Easing.Back.Out).start();
-                else if (data.tipo === 'cortina') new TWEEN.Tween(data.meshVisual.scale).to({ y: targetAbierto ? data.escala_abierto : data.escala_cerrado }, 1000).easing(TWEEN.Easing.Cubic.InOut).start();
+                const targetAbierto = !data.abierto;
+                if (data.tipo === 'extraible') animar(data.grupo.position, 'z', targetAbierto ? data.posZ_abierto : data.posZ_cerrado, 650, easeCubicOut);
+                else if (data.tipo === 'puerta' || data.tipo === 'puerta_louver') animar(data.grupo.rotation, 'y', targetAbierto ? data.rotY_abierto : data.rotY_cerrado, 650, easeCubicOut);
+                else if (data.tipo === 'puerta_corrediza') animar(data.grupo.position, 'x', targetAbierto ? data.posX_abierto : data.posX_cerrado, 800, easeCubicInOut);
+                else if (data.tipo === 'tapa_asador') animar(data.grupo.rotation, 'x', targetAbierto ? data.rotX_abierto : data.rotX_cerrado, 650, easeBackOut);
+                else if (data.tipo === 'cortina') animar(data.meshVisual.scale, 'y', targetAbierto ? data.escala_abierto : data.escala_cerrado, 1000, easeCubicInOut);
                 data.abierto = targetAbierto;
             }
         });
 
-        function animate(time) { requestAnimationFrame(animate); TWEEN.update(time); controls.update(); renderer.render(scene, camera); } animate();
+        function animate(time) { requestAnimationFrame(animate); actualizarAnimaciones(time); controls.update(); renderer.render(scene, camera); } animate(performance.now());
         window.addEventListener('resize', () => { camera.aspect = window.innerWidth / window.innerHeight; camera.updateProjectionMatrix(); renderer.setSize(window.innerWidth, window.innerHeight); });
 
         const btnFicha = document.getElementById('btn-ficha'), modalFicha = document.getElementById('ficha-tecnica'), btnCerrar = document.getElementById('btn-cerrar-ficha'), fichaDataContainer = document.getElementById('ficha-data');
@@ -1255,7 +1279,7 @@
             { cat: "Estructura y Muebles", item: "Puerta corrediza de PVC Teca para Cobertizo Sur, con riel superior", cant: "1 Pza", pu: 7200, id: "puerta_corrediza" },
             { cat: "Muro Falso", item: "Bastidor acero galvanizado + Panel Durock 1/2'' + Basecoat e impermeable en Muro 215 a 90°", cant: "6.8 m²", pu: 1150, id: "muro_durock" },
             { cat: "Cubiertas", item: "Cubiertas y costados de Microcemento negro mate 6cm", cant: "4.2 m²", pu: 1650, id: "microcemento" },
-            { cat: "Cubiertas", item: "Techo negro mate con zanja embutida de captación y bajante interior al foso", cant: "1 Pza", pu: 6200, id: "techo_nicho_sur" },
+            { cat: "Cubiertas", item: "Techo negro mate con zanja embutida de captación y bajante interior", cant: "1 Pza", pu: 6200, id: "techo_nicho_sur" },
             { cat: "Equipo", item: "Asador empotrable 91cm acero inoxidable 304 con tapa", cant: "1 Pza", pu: 18500, id: "asador" },
             { cat: "Equipo", item: "Persiana enrollable de aluminio negro hermética para Nicho Norte", cant: "1 Pza", pu: 6200, id: "persiana" },
             { cat: "Equipo", item: "Torre de lavado y secado en color negro (lado izquierdo Cobertizo Sur)", cant: "1 Pza", pu: 24500, id: "torre_lavado" },
@@ -1283,7 +1307,7 @@
                             <li><strong>Muro Este:</strong> 400 cm totales (Ventanal de 265 cm).</li>
                             <li><strong>Muro Oeste:</strong> 487 cm de longitud; altura total 260 cm, con 100 cm de muro inferior + 100 cm de vano + 60 cm de muro superior; vano de 300 cm.</li>
                             <li><strong>Muro Sur 1 (Muro Falso Recto a 90°):</strong> Tramo de 215 cm de longitud ejecutado en bastidor de acero galvanizado con panel de cemento Durock de 1/2''.</li>
-                            <li><strong>Cobertizo Sur (Lavandería):</strong> Muro Este de 98 cm, Muro Oeste de 87 cm, Fondo de 148 cm y Chaflán de 32 cm. Puerta corrediza única de PVC Teca que abre hacia la izquierda y queda por delante del muro falso, zoclo superior de 11 cm sobre la puerta, cubierta negra mate con zanja embutida directa y bajante vertical recto interior derecho (Oeste), y Torre de lavado negra (5 cm al frente, 10 cm atrás, 2.5 cm a la izquierda).</li>
+                            <li><strong>Cobertizo Sur (Lavandería):</strong> Muro Este de 98 cm, Muro Oeste de 87 cm, Fondo de 148 cm y Chaflán de 32 cm. Puerta corrediza única de PVC Teca que abre hacia la izquierda y queda por delante del muro falso, zoclo superior de 11 cm sobre la puerta, cubierta negra mate con zanja embutida directa y bajante vertical recto interior derecho (Oeste), sin foso de piso, y Torre de lavado negra (5 cm al frente, 10 cm atrás, 2.5 cm a la izquierda).</li>
                         </ul>
                     </div>
                     <div class="data-section">
@@ -1312,6 +1336,7 @@
         btnFicha.addEventListener('click', () => { poblarFicha(); modalFicha.classList.add('active'); });
         btnCerrar.addEventListener('click', () => modalFicha.classList.remove('active'));
         setTimeout(() => { const inst = document.getElementById('instrucciones'); if(inst) { inst.style.opacity = '0'; setTimeout(() => inst.remove(), 800); } }, 5000);
+        window.addEventListener('error', (event) => { console.error(event.error || event.message); });
     </script>
 </body>
 </html>
