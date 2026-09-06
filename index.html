@@ -119,7 +119,7 @@
         const CONFIG = {
             muroNorte: { ancho: 390, alto: 316, grosor: 20 },
             muroEste: { largoTotal: 400, tramoNorte: 110, ventanaLargo: 265, tramoSur: 25, alto: 316, grosor: 20, alturaVidrio: 210 },
-            muroOeste: { largoTotal: 487, alto: 220, grosor: 20, inclinacion3cmAtZ412: 3, distanciaNorteHueco: 100, anchoHueco: 300, distanciaPisoHueco: 90, altoHueco: 100, vigaTamaño: 10, vigaSeparacionAprox: 7.2 },
+            muroOeste: { largoTotal: 487, alto: 260, grosor: 20, inclinacion3cmAtZ412: 3, distanciaNorteHueco: 100, anchoHueco: 300, distanciaPisoHueco: 100, altoHueco: 100, vigaTamaño: 10, vigaSeparacionAprox: 7.2 },
             muroSur: { seg1Oeste: 215, seg2Sur: 86, seg3Oeste: 148, seg4Diag: 32, alto: 316, grosor: 20 },
             barra: { profundidadTotal: 100, profundidadMueble: 98, altoTotal: 90, grosorCubierta: 6, altoZocalo: 4, pendienteCubierta: 0.8 },
             modulos: { izquierdo: { ancho: 85.5 }, asador: { ancho: 91, profundidadCerrado: 67 }, derecho: { ancho: 85.5 }, nichoNorte: { ancho: 110 } },
@@ -492,10 +492,10 @@
         const distNH = CONFIG.muroOeste.distanciaNorteHueco; // 100
         const wHO = CONFIG.muroOeste.anchoHueco; // 300
         const distSH = CONFIG.muroOeste.largoTotal - (distNH + wHO); // 87
-        const distPH = CONFIG.muroOeste.distanciaPisoHueco, altoHO = CONFIG.muroOeste.altoHueco, altoDO = 220 - (distPH + altoHO); 
+        const distPH = CONFIG.muroOeste.distanciaPisoHueco, altoHO = CONFIG.muroOeste.altoHueco, altoDO = CONFIG.muroOeste.alto - (distPH + altoHO); 
         
-        const muroON = crearCaja(grosorMuro, 220, distNH, matMuro); muroON.position.set(-grosorMuro / 2, 220 / 2, distNH / 2); muroOesteGroup.add(muroON);
-        const muroOS = crearCaja(grosorMuro, 220, distSH, matMuro); muroOS.position.set(-grosorMuro / 2, 220 / 2, distNH + wHO + distSH / 2); muroOesteGroup.add(muroOS);
+        const muroON = crearCaja(grosorMuro, CONFIG.muroOeste.alto, distNH, matMuro); muroON.position.set(-grosorMuro / 2, CONFIG.muroOeste.alto / 2, distNH / 2); muroOesteGroup.add(muroON);
+        const muroOS = crearCaja(grosorMuro, CONFIG.muroOeste.alto, distSH, matMuro); muroOS.position.set(-grosorMuro / 2, CONFIG.muroOeste.alto / 2, distNH + wHO + distSH / 2); muroOesteGroup.add(muroOS);
         const anteO = crearCaja(grosorMuro, distPH, wHO, matMuro); anteO.position.set(-grosorMuro / 2, distPH / 2, distNH + wHO / 2); muroOesteGroup.add(anteO);
         const dinO = crearCaja(grosorMuro, altoDO, wHO, matMuro); dinO.position.set(-grosorMuro / 2, distPH + altoHO + altoDO / 2, distNH + wHO / 2); muroOesteGroup.add(dinO);
         
@@ -896,30 +896,33 @@
 
         // El lambrín decorativo de los muros se elimina. Se conserva únicamente en los frentes del mobiliario.
         function crearDetalleOrganicoMuroNorte() {
-            // BANDA DE ESTUCO ORGÁNICO: cubre exactamente 95 cm de la ventana,
-            // desde su borde inferior (Y=125) hasta Y=220, dejando 66 cm superiores.
-            // Se coloca físicamente delante del vidrio para que el cambio sea inequívoco.
+            // PANEL DE ESTUCO ORGÁNICO CONTINUO Y PEGADO AL MURO NORTE.
+            // Ocupa desde el muro oeste (x=0) hasta el inicio real del nicho
+            // del refrigerador (borde izquierdo del pilar), sin huecos laterales
+            // ni separación posterior. La parte superior es ondulada; la parte
+            // inferior queda a Y=125, por lo que cubre 95 cm y deja 66 cm de ventana.
             const g = new THREE.Group();
-            const zFront = 5.0;
-            // La curva recorre el muro norte y TERMINA antes del nicho del
-            // refrigerador. No entra ni pasa por encima del cobertizo.
-            const xLeft = 8, xRight = posX_NichoNorte - 3.0;
-            const yBottom = 124.5;
+            const zFront = 0.35;
+            const xLeft = 0.0;
+            const xRight = posX_PierNichoIzq;
+            const yBottom = 125.0;
+
             const ptsTop = [
                 new THREE.Vector3(xLeft, 205, zFront),
-                new THREE.Vector3(32, 211, zFront),
-                new THREE.Vector3(60, 218, zFront),
-                new THREE.Vector3(90, 220, zFront),
+                new THREE.Vector3(25, 210, zFront),
+                new THREE.Vector3(55, 219, zFront),
+                new THREE.Vector3(88, 221, zFront),
                 new THREE.Vector3(120, 216, zFront),
                 new THREE.Vector3(150, 208, zFront),
-                new THREE.Vector3(178, 205, zFront),
-                new THREE.Vector3(205, 211, zFront),
-                new THREE.Vector3(235, 219, zFront),
+                new THREE.Vector3(180, 205, zFront),
+                new THREE.Vector3(210, 211, zFront),
+                new THREE.Vector3(238, 219, zFront),
                 new THREE.Vector3(xRight - 18, 216, zFront),
                 new THREE.Vector3(xRight, 210, zFront)
             ];
+
             const topCurve = new THREE.CatmullRomCurve3(ptsTop, false, 'centripetal', 0.35);
-            const topPts = topCurve.getPoints(180);
+            const topPts = topCurve.getPoints(240);
             const shape = new THREE.Shape();
             shape.moveTo(xLeft, yBottom);
             shape.lineTo(xLeft, topPts[0].y);
@@ -928,28 +931,34 @@
             shape.closePath();
 
             const estuco = new THREE.Mesh(
-                new THREE.ExtrudeGeometry(shape, { depth: 2.8, bevelEnabled: true, bevelSegments: 3, bevelSize: 0.55, bevelThickness: 0.45 }),
-                matRelieveMineral
+                new THREE.ExtrudeGeometry(shape, {
+                    depth: 0.9,
+                    bevelEnabled: true,
+                    bevelSegments: 3,
+                    bevelSize: 0.35,
+                    bevelThickness: 0.18
+                }),
+                matMuro
             );
-            estuco.position.z = zFront;
-            estuco.renderOrder = 20;
-            estuco.material.depthTest = false;
-            estuco.material.depthWrite = false;
+            estuco.position.z = -0.45;
+            estuco.renderOrder = 12;
+            estuco.material.depthTest = true;
+            estuco.material.depthWrite = true;
             estuco.castShadow = false;
             estuco.receiveShadow = true;
             g.add(estuco);
 
-            // Línea LED integrada justo sobre la curva.
+            // LED: integrada en el borde ondulado, sin cruzar el nicho.
             const led = new THREE.Mesh(
-                new THREE.TubeGeometry(topCurve, 180, 0.42, 12, false),
-                new THREE.MeshBasicMaterial({ color: 0xffc985, depthTest: false, depthWrite: false })
+                new THREE.TubeGeometry(topCurve, 240, 0.38, 12, false),
+                new THREE.MeshBasicMaterial({ color: 0xffc985 })
             );
-            led.position.z = zFront + 3.2;
-            led.renderOrder = 21;
+            led.position.z = 0.55;
+            led.renderOrder = 13;
             g.add(led);
 
-            const glow = new THREE.PointLight(0xffc27d, 1.15, 190, 2);
-            glow.position.set(180, 160, 30);
+            const glow = new THREE.PointLight(0xffc27d, 1.0, 170, 2);
+            glow.position.set(155, 165, 18);
             g.add(glow);
             grupoMuroNorte.add(g);
         }
@@ -1035,10 +1044,11 @@
             }
             // Macetas grandes, pero completamente dentro de la huella de la barra.
             // El centro se separa del borde más que el radio máximo de la maceta.
-            const margenMacetaX = 21;
-            const zMaceta = CONFIG.barra.profundidadTotal / 2;
-            crearMaceta(margenMacetaX, zMaceta, 1.85);
-            crearMaceta(anchoBarraExclusivo - margenMacetaX, zMaceta, 1.85);
+            const margenMacetaX = 32;
+            const zMaceta = 50;
+            const xDerechaSegura = anchoBarraModulos - 32;
+            crearMaceta(margenMacetaX, zMaceta, 1.55);
+            crearMaceta(xDerechaSegura, zMaceta, 1.55);
         }
         construirJardineraYPlantas();
         const wallBounceLeft = new THREE.PointLight(0xffc98d, 0.7, 90, 2); wallBounceLeft.position.set(20, 95, 30); grupoMuroNorte.add(wallBounceLeft);
@@ -1050,10 +1060,10 @@
                 const groupExtraible = new THREE.Group(), xCenter = posX_ModIzq + (i * wGabinete) + (wGabinete / 2);
                 const frenteLambrin = crearPanelLambrinContinuo(wGabinete, hGab - 0.2, posX_ModIzq + i * wGabinete); frenteLambrin.position.set(0, hGab / 2, dGab - 1.8); groupExtraible.add(frenteLambrin);
                 const hitBoxFrente = crearCaja(wGabinete, hGab - 0.2, 3, new THREE.MeshBasicMaterial({ visible: false })); hitBoxFrente.position.set(0, hGab / 2, dGab - 1); groupExtraible.add(hitBoxFrente);
-                const pisoInt = crearCaja(wGabinete - 2, esp, dGab - 4, matPVC); pisoInt.position.set(0, esp / 2, (dGab - 4) / 2); groupExtraible.add(pisoInt);
-                const paredIzq = crearCaja(esp, hGab - 6, dGab - 4, matPVC); paredIzq.position.set(-(wGabinete - 2) / 2 + esp / 2, (hGab - 6) / 2, (dGab - 4) / 2); groupExtraible.add(paredIzq);
-                const paredDer = crearCaja(esp, hGab - 6, dGab - 4, matPVC); paredDer.position.set((wGabinete - 2) / 2 - esp / 2, (hGab - 6) / 2, (dGab - 4) / 2); groupExtraible.add(paredDer);
-                const fondoInt = crearCaja(wGabinete - 2, hGab - 6, esp, matPVC); fondoInt.position.set(0, (hGab - 6) / 2, esp / 2 + 1); groupExtraible.add(fondoInt);
+                const pisoInt = crearCaja(wGabinete - 2, esp, dGab - 4, matTKPVC); pisoInt.position.set(0, esp / 2, (dGab - 4) / 2); groupExtraible.add(pisoInt);
+                const paredIzq = crearCaja(esp, hGab - 6, dGab - 4, matTKPVC); paredIzq.position.set(-(wGabinete - 2) / 2 + esp / 2, (hGab - 6) / 2, (dGab - 4) / 2); groupExtraible.add(paredIzq);
+                const paredDer = crearCaja(esp, hGab - 6, dGab - 4, matTKPVC); paredDer.position.set((wGabinete - 2) / 2 - esp / 2, (hGab - 6) / 2, (dGab - 4) / 2); groupExtraible.add(paredDer);
+                const fondoInt = crearCaja(wGabinete - 2, hGab - 6, esp, matTKPVC); fondoInt.position.set(0, (hGab - 6) / 2, esp / 2 + 1); groupExtraible.add(fondoInt);
                 const boteFrontal = crearBoteBasuraAnchoHorizontal(); boteFrontal.position.set(0, esp, dGab - 24); groupExtraible.add(boteFrontal);
                 const botePosterior = crearBoteBasuraAnchoHorizontal(); botePosterior.position.set(0, esp, dGab - 64); groupExtraible.add(botePosterior);
                 groupExtraible.position.set(xCenter, CONFIG.barra.altoZocalo, 0); grupoMuroNorte.add(groupExtraible);
